@@ -2,9 +2,17 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 import { VitePWA } from 'vite-plugin-pwa'
+import { copyFileSync } from 'fs'
 
 export default defineConfig({
   plugins: [
+    // Cloudflare Pages SPA fallback: serve 404.html for unmatched routes
+    {
+      name: 'cloudflare-spa-404',
+      closeBundle() {
+        copyFileSync('dist/index.html', 'dist/404.html')
+      },
+    },
     react(),
     VitePWA({
       registerType: 'autoUpdate',
