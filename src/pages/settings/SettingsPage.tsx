@@ -65,7 +65,7 @@ export function SettingsPage() {
     if (!profile?.organization_id || !isAdmin()) return
     supabase
       .from('organizations')
-      .select('id, name, settings')
+      .select('id, name, logo_url, settings')
       .eq('id', profile.organization_id)
       .single()
       .then(({ data }) => {

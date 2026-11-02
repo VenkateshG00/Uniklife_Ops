@@ -47,8 +47,10 @@ export function useUpdateJobTitle() {
   const qc = useQueryClient()
   const orgId = useAuthStore(s => s.profile?.organization_id)
   return useMutation({
-    mutationFn: ({ id, job_title }: { id: string; job_title: string }) =>
-      supabase.from('profiles').update({ job_title }).eq('id', id).throwOnError(),
+    mutationFn: async ({ id, job_title }: { id: string; job_title: string }) => {
+      const { error } = await supabase.from('profiles').update({ job_title }).eq('id', id)
+      if (error) throw error
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['staff', orgId] }),
   })
 }
