@@ -1,0 +1,1 @@
+ALTER TABLE staff_invites ADD COLUMN IF NOT EXISTS job_title TEXT;
