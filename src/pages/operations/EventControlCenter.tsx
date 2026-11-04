@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Header } from '../../components/layout/Header'
 import { KpiCard } from '../../components/ui/KpiCard'
@@ -10,13 +10,56 @@ import {
   ChevronRight, RefreshCw, ArrowLeft, XCircle, Loader2, Flag, Lock
 } from 'lucide-react'
 import { cn, formatDateTime } from '../../lib/utils'
-import type { ItemStatus } from '../../types'
-import { useOperationPlanById, useCloseEvent } from '../../hooks/useEvents'
+import type { EventPhase, ItemStatus } from '../../types'
+import { useOperationPlanById, useCloseEvent, useUpdateOperationPlan } from '../../hooks/useEvents'
 import { useChecklist, useUpdateItemStatus, useUpdateItemQty, type QtyField } from '../../hooks/useChecklist'
 import { useShortages, useUpdateShortageStatus } from '../../hooks/useShortages'
 import { useEventActivity, useRealtimeActivity } from '../../hooks/useRealtime'
 
 type FilterTab = 'all' | 'pending' | 'completed' | 'shortage' | 'critical'
+
+const PHASE_ORDER: EventPhase[] = ['planning', 'preparation', 'dispatch', 'event_day', 'post_event', 'closed']
+
+const PHASE_LABELS: Record<EventPhase, string> = {
+  planning:    'Planning',
+  preparation: 'Preparation',
+  dispatch:    'Dispatch',
+  event_day:   'Event Day',
+  post_event:  'Post Event',
+  closed:      'Closed',
+}
+
+const PHASE_STYLES: Record<EventPhase, string> = {
+  planning:    'bg-blue-50 text-blue-700 border-blue-200',
+  preparation: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  dispatch:    'bg-amber-50 text-amber-700 border-amber-200',
+  event_day:   'bg-emerald-50 text-emerald-700 border-emerald-200',
+  post_event:  'bg-violet-50 text-violet-700 border-violet-200',
+  closed:      'bg-slate-100 text-slate-500 border-slate-200',
+}
+
+function computePhase(
+  startDatetime: string,
+  endDatetime: string,
+  dispatchDeadline?: string | null,
+  savedPhase?: string
+): EventPhase {
+  if (savedPhase === 'closed') return 'closed'
+  const now = new Date()
+  if (now >= new Date(endDatetime))   return 'post_event'
+  if (now >= new Date(startDatetime)) return 'event_day'
+  if (dispatchDeadline && now >= new Date(dispatchDeadline)) return 'dispatch'
+  const msToStart = new Date(startDatetime).getTime() - now.getTime()
+  const daysToStart = msToStart / (1000 * 60 * 60 * 24)
+  if (dispatchDeadline) {
+    const daysToDispatch = (new Date(dispatchDeadline).getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+    if (daysToDispatch <= 3) return 'preparation'
+  } else {
+    if (daysToStart <= 1)  return 'dispatch'
+    if (daysToStart <= 7)  return 'preparation'
+  }
+  return 'planning'
+}
 
 function calcReadiness(items: Array<{ status: string; is_critical: boolean }>) {
   if (!items.length) return 0
@@ -52,9 +95,24 @@ export function EventControlCenter() {
   const updateStatus = useUpdateItemStatus(id ?? '')
   const updateQty    = useUpdateItemQty(id ?? '')
   const updateShortage = useUpdateShortageStatus(id ?? '')
-  const closeEvent = useCloseEvent()
-  const planPhase = (plan as any)?.phase as string | undefined
-  const eventStatus = (plan as any)?.events?.status as string | undefined
+  const closeEvent   = useCloseEvent()
+  const updatePlan   = useUpdateOperationPlan()
+  const planPhase    = (plan as any)?.phase as EventPhase | undefined
+  const eventStatus  = (plan as any)?.events?.status as string | undefined
+
+  // Auto-advance phase based on event dates
+  useEffect(() => {
+    if (!plan) return
+    const ev = (plan as any).events
+    if (!ev?.start_datetime || !ev?.end_datetime) return
+    const savedPhase = (plan as any).phase as EventPhase
+    if (savedPhase === 'closed') return
+    const computed = computePhase(ev.start_datetime, ev.end_datetime, (plan as any).dispatch_deadline, savedPhase)
+    if (PHASE_ORDER.indexOf(computed) > PHASE_ORDER.indexOf(savedPhase)) {
+      updatePlan.mutate({ id: (plan as any).id, payload: { phase: computed } })
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [(plan as any)?.id])
 
   if (planLoading) {
     return (
@@ -128,16 +186,24 @@ export function EventControlCenter() {
             <button onClick={() => navigate('/operations')} className="btn btn-ghost btn-sm">
               <ArrowLeft className="w-4 h-4" /> All Operations
             </button>
-            {planPhase && (
-              <span className={cn(
-                'text-xs font-semibold px-2.5 py-1 rounded-full border capitalize',
-                planPhase === 'closed'      ? 'bg-slate-100 text-slate-500 border-slate-200' :
-                planPhase === 'post_event'  ? 'bg-violet-50 text-violet-700 border-violet-200' :
-                planPhase === 'event_day'   ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                planPhase === 'dispatch'    ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                'bg-blue-50 text-blue-700 border-blue-200'
-              )}>
-                {planPhase.replace(/_/g, ' ')}
+            {planPhase && planPhase !== 'closed' && (
+              <select
+                value={planPhase}
+                onChange={e => updatePlan.mutate({ id: (plan as any).id, payload: { phase: e.target.value as EventPhase } })}
+                disabled={updatePlan.isPending}
+                className={cn(
+                  'text-xs font-semibold px-2.5 py-1 rounded-full border cursor-pointer appearance-none',
+                  PHASE_STYLES[planPhase] ?? 'bg-blue-50 text-blue-700 border-blue-200'
+                )}
+              >
+                {PHASE_ORDER.filter(p => p !== 'closed').map(p => (
+                  <option key={p} value={p}>{PHASE_LABELS[p]}</option>
+                ))}
+              </select>
+            )}
+            {planPhase === 'closed' && (
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-full border bg-slate-100 text-slate-500 border-slate-200">
+                Closed
               </span>
             )}
           </div>

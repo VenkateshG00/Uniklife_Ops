@@ -91,6 +91,19 @@ export function useUpdateEvent() {
   })
 }
 
+export function useUpdateOperationPlan() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: Partial<EventOperationPlan> }) =>
+      operationPlansService.update(id, payload),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['operation-plan-by-id', vars.id] })
+      qc.invalidateQueries({ queryKey: ['operation-plans'] })
+    },
+    onError: (err: Error) => toast.error(`Failed to update plan: ${err.message}`),
+  })
+}
+
 export function useCloseEvent() {
   const qc = useQueryClient()
   return useMutation({
