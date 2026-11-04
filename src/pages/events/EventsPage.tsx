@@ -15,11 +15,15 @@ function EventRowMenu({ event, onEdit }: { event: Event; onEdit: () => void }) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 })
   const btnRef = useRef<HTMLButtonElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
   const deleteEvent = useDeleteEvent()
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (btnRef.current && !btnRef.current.contains(e.target as Node)) {
+      const target = e.target as Node
+      const insideBtn = btnRef.current?.contains(target)
+      const insidePanel = panelRef.current?.contains(target)
+      if (!insideBtn && !insidePanel) {
         setOpen(false)
         setConfirmDelete(false)
       }
@@ -49,6 +53,7 @@ function EventRowMenu({ event, onEdit }: { event: Event; onEdit: () => void }) {
       </button>
       {open && (
         <div
+          ref={panelRef}
           className="fixed w-44 bg-white border border-slate-200 rounded-xl shadow-lg z-[200] py-1"
           style={{ top: dropdownPos.top, right: dropdownPos.right }}
         >
