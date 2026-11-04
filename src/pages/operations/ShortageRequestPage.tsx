@@ -6,9 +6,11 @@ import { z } from 'zod'
 import { Header } from '../../components/layout/Header'
 import { PriorityBadge, ShortageStatusBadge } from '../../components/ui/Badge'
 import toast from 'react-hot-toast'
-import { ArrowLeft, Plus, AlertTriangle, Check, X, MessageCircle, Loader2, PackagePlus } from 'lucide-react'
+import { ArrowLeft, Plus, AlertTriangle, Check, X, MessageCircle, Loader2, PackagePlus, PackageSearch } from 'lucide-react'
 import { timeAgo, cn } from '../../lib/utils'
 import { useChecklist } from '../../hooks/useChecklist'
+import { checklistService } from '../../services/checklist'
+import { supabase } from '../../lib/supabase'
 import { useShortages, useCreateShortage, useUpdateShortageStatus, type ShortageActionPayload } from '../../hooks/useShortages'
 import { useOperationPlanById } from '../../hooks/useEvents'
 import { useAuthStore } from '../../stores/authStore'
@@ -25,11 +27,24 @@ const schema = z.object({
 })
 type FormValues = z.infer<typeof schema>
 
+const newItemSchema = z.object({
+  itemName:   z.string().min(2, 'Item name required'),
+  unit:       z.string().min(1, 'Unit required'),
+  qtyNeeded:  z.string().min(1, 'Quantity required'),
+  itemType:   z.enum(['consumable', 'reusable']),
+  reason:     z.string().min(5, 'Describe the reason'),
+  priority:   z.enum(['critical', 'high', 'medium', 'low']),
+  neededBy:   z.string().optional(),
+  notes:      z.string().optional(),
+})
+type NewItemFormValues = z.infer<typeof newItemSchema>
+
 export function ShortageRequestPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const planId = id ?? ''
   const [showForm, setShowForm] = useState(false)
+  const [requestType, setRequestType] = useState<'existing' | 'new'>('existing')
   const [actionModal, setActionModal] = useState<ShortageActionPayload & { itemName: string; requestedQty: number } | null>(null)
   const [approvedQty, setApprovedQty] = useState('')
   const [reviewNote, setReviewNote] = useState('')
@@ -47,6 +62,11 @@ export function ShortageRequestPage() {
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { priority: 'high' },
+  })
+
+  const { register: regNew, handleSubmit: handleNew, reset: resetNew, formState: { errors: errNew } } = useForm<NewItemFormValues>({
+    resolver: zodResolver(newItemSchema),
+    defaultValues: { priority: 'high', itemType: 'consumable', unit: 'nos', qtyNeeded: '1' },
   })
 
   const onSubmit = async (values: FormValues) => {
@@ -77,6 +97,69 @@ export function ShortageRequestPage() {
     setShowForm(false)
   }
 
+  const [submittingNew, setSubmittingNew] = useState(false)
+  const onSubmitNew = async (values: NewItemFormValues) => {
+    setSubmittingNew(true)
+    try {
+      // Get default system category for FK
+      const { data: cat } = await supabase
+        .from('material_categories')
+        .select('id')
+        .eq('is_system', true)
+        .order('sort_order')
+        .limit(1)
+        .single()
+      if (!cat) throw new Error('No default category found')
+
+      // Auto-add item to checklist
+      const newItem = await checklistService.create({
+        operation_plan_id: planId,
+        event_id: eventId,
+        organization_id: profile?.organization_id ?? '',
+        category_id: cat.id,
+        name: values.itemName,
+        unit: values.unit,
+        required_qty: parseInt(values.qtyNeeded),
+        item_type: values.itemType,
+        priority: values.priority,
+        is_critical: values.priority === 'critical',
+        status: 'pending',
+        office_status: 'not_started',
+        venue_status: 'not_received',
+        reserved_qty: 0, packed_qty: 0, dispatched_qty: 0,
+        received_qty: 0, venue_verified_qty: 0,
+        additional_requested_qty: 0, additional_approved_qty: 0,
+        damaged_qty: 0, lost_qty: 0,
+        photo_urls: [],
+        last_updated_by: userId,
+      })
+
+      // Create shortage request linked to the new checklist item
+      await createShortage.mutateAsync({
+        operation_plan_id: planId,
+        event_id: eventId,
+        checklist_item_id: (newItem as any).id,
+        requested_by: userId,
+        organization_id: profile?.organization_id ?? '',
+        additional_qty_requested: parseInt(values.qtyNeeded),
+        current_qty: 0,
+        reason: values.reason,
+        priority: values.priority,
+        needed_by: values.neededBy || null,
+        notes: values.notes || null,
+        status: 'pending',
+      } as any)
+
+      resetNew()
+      setShowForm(false)
+      toast.success('New item added to checklist and shortage request submitted')
+    } catch (e: any) {
+      toast.error(`Failed: ${e.message}`)
+    } finally {
+      setSubmittingNew(false)
+    }
+  }
+
   return (
     <>
       <Header title="Shortage Requests" subtitle="Manage additional material requirements" />
@@ -86,7 +169,7 @@ export function ShortageRequestPage() {
           <button onClick={() => navigate(`/operations/${id}`)} className="btn btn-ghost btn-sm">
             <ArrowLeft className="w-4 h-4" /> Back to Control Center
           </button>
-          <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
+          <button className="btn btn-primary" onClick={() => { setShowForm(!showForm); setRequestType('existing') }}>
             <Plus className="w-4 h-4" /> New Shortage Request
           </button>
         </div>
@@ -98,66 +181,158 @@ export function ShortageRequestPage() {
               Report Shortage / Additional Requirement
             </h2>
 
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="label">Item *</label>
-                  <select {...register('itemId')} className={cn('input', errors.itemId && 'input-error')}>
-                    <option value="">Select item…</option>
-                    {items.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
-                  </select>
-                  {errors.itemId && <p className="error-msg">{errors.itemId.message}</p>}
+            {/* Request type toggle */}
+            <div className="flex gap-2 p-1 bg-slate-100 rounded-xl mb-5 w-fit">
+              <button
+                type="button"
+                onClick={() => setRequestType('existing')}
+                className={cn(
+                  'px-4 py-1.5 rounded-lg text-sm font-semibold transition-all',
+                  requestType === 'existing'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
+                )}
+              >
+                Existing Item
+              </button>
+              <button
+                type="button"
+                onClick={() => setRequestType('new')}
+                className={cn(
+                  'flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all',
+                  requestType === 'new'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
+                )}
+              >
+                <PackageSearch className="w-3.5 h-3.5" /> New Item (not in list)
+              </button>
+            </div>
+
+            {/* ── Existing item form ── */}
+            {requestType === 'existing' && (
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="label">Item *</label>
+                    <select {...register('itemId')} className={cn('input', errors.itemId && 'input-error')}>
+                      <option value="">Select item…</option>
+                      {items.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
+                    </select>
+                    {errors.itemId && <p className="error-msg">{errors.itemId.message}</p>}
+                  </div>
+                  <div>
+                    <label className="label">Priority *</label>
+                    <select {...register('priority')} className="input">
+                      <option value="critical">Critical</option>
+                      <option value="high">High</option>
+                      <option value="medium">Medium</option>
+                      <option value="low">Low</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="label">Additional Quantity Required *</label>
+                    <input
+                      {...register('additionalQty')}
+                      type="number"
+                      className={cn('input', errors.additionalQty && 'input-error')}
+                      placeholder="e.g. 20"
+                    />
+                    {errors.additionalQty && <p className="error-msg">{errors.additionalQty.message}</p>}
+                  </div>
+                  <div>
+                    <label className="label">Needed By</label>
+                    <input {...register('neededBy')} type="datetime-local" className="input" />
+                  </div>
                 </div>
                 <div>
-                  <label className="label">Priority *</label>
-                  <select {...register('priority')} className="input">
-                    <option value="critical">Critical</option>
-                    <option value="high">High</option>
-                    <option value="medium">Medium</option>
-                    <option value="low">Low</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="label">Additional Quantity Required *</label>
-                  <input
-                    {...register('additionalQty')}
-                    type="number"
-                    className={cn('input', errors.additionalQty && 'input-error')}
-                    placeholder="e.g. 20"
+                  <label className="label">Reason *</label>
+                  <textarea
+                    {...register('reason')}
+                    rows={2}
+                    className={cn('input resize-none', errors.reason && 'input-error')}
+                    placeholder="Why is this additional quantity needed?"
                   />
-                  {errors.additionalQty && <p className="error-msg">{errors.additionalQty.message}</p>}
+                  {errors.reason && <p className="error-msg">{errors.reason.message}</p>}
                 </div>
                 <div>
-                  <label className="label">Needed By</label>
-                  <input {...register('neededBy')} type="datetime-local" className="input" />
+                  <label className="label">Notes</label>
+                  <input {...register('notes')} className="input" placeholder="Additional notes…" />
                 </div>
-              </div>
+                <div className="flex items-center gap-3 justify-end pt-2">
+                  <button type="button" onClick={() => { setShowForm(false); reset() }} className="btn btn-secondary">Cancel</button>
+                  <button type="submit" disabled={createShortage.isPending} className="btn btn-primary">
+                    {createShortage.isPending ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting…</> : 'Submit Request'}
+                  </button>
+                </div>
+              </form>
+            )}
 
-              <div>
-                <label className="label">Reason *</label>
-                <textarea
-                  {...register('reason')}
-                  rows={2}
-                  className={cn('input resize-none', errors.reason && 'input-error')}
-                  placeholder="Why is this additional quantity needed?"
-                />
-                {errors.reason && <p className="error-msg">{errors.reason.message}</p>}
-              </div>
-
-              <div>
-                <label className="label">Notes</label>
-                <input {...register('notes')} className="input" placeholder="Additional notes…" />
-              </div>
-
-              <div className="flex items-center gap-3 justify-end pt-2">
-                <button type="button" onClick={() => { setShowForm(false); reset() }} className="btn btn-secondary">
-                  Cancel
-                </button>
-                <button type="submit" disabled={createShortage.isPending} className="btn btn-primary">
-                  {createShortage.isPending ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting…</> : 'Submit Request'}
-                </button>
-              </div>
-            </form>
+            {/* ── New item form ── */}
+            {requestType === 'new' && (
+              <form onSubmit={handleNew(onSubmitNew)} className="space-y-4">
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-start gap-2">
+                  <PackageSearch className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>This item will be <strong>auto-added to the checklist</strong> and a shortage request will be raised for admin approval.</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
+                    <label className="label">Item Name *</label>
+                    <input {...regNew('itemName')} className={cn('input', errNew.itemName && 'input-error')} placeholder="e.g. Extension Cords, Podium, Banners" />
+                    {errNew.itemName && <p className="error-msg">{errNew.itemName.message}</p>}
+                  </div>
+                  <div>
+                    <label className="label">Unit *</label>
+                    <input {...regNew('unit')} className="input" placeholder="nos, pcs, kg…" />
+                  </div>
+                  <div>
+                    <label className="label">Quantity Needed *</label>
+                    <input type="number" min="1" {...regNew('qtyNeeded')} className={cn('input', errNew.qtyNeeded && 'input-error')} />
+                    {errNew.qtyNeeded && <p className="error-msg">{errNew.qtyNeeded.message}</p>}
+                  </div>
+                  <div>
+                    <label className="label">Item Type</label>
+                    <select {...regNew('itemType')} className="input">
+                      <option value="consumable">Consumable</option>
+                      <option value="reusable">Reusable</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="label">Priority *</label>
+                    <select {...regNew('priority')} className="input">
+                      <option value="critical">Critical</option>
+                      <option value="high">High</option>
+                      <option value="medium">Medium</option>
+                      <option value="low">Low</option>
+                    </select>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="label">Needed By</label>
+                    <input {...regNew('neededBy')} type="datetime-local" className="input" />
+                  </div>
+                </div>
+                <div>
+                  <label className="label">Reason *</label>
+                  <textarea
+                    {...regNew('reason')}
+                    rows={2}
+                    className={cn('input resize-none', errNew.reason && 'input-error')}
+                    placeholder="Why is this item needed? e.g. Last-minute addition by client"
+                  />
+                  {errNew.reason && <p className="error-msg">{errNew.reason.message}</p>}
+                </div>
+                <div>
+                  <label className="label">Notes</label>
+                  <input {...regNew('notes')} className="input" placeholder="Supplier suggestion, specs…" />
+                </div>
+                <div className="flex items-center gap-3 justify-end pt-2">
+                  <button type="button" onClick={() => { setShowForm(false); resetNew() }} className="btn btn-secondary">Cancel</button>
+                  <button type="submit" disabled={submittingNew} className="btn btn-primary">
+                    {submittingNew ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting…</> : <><PackagePlus className="w-4 h-4" /> Add & Request</>}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         )}
 
