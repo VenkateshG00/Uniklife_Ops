@@ -35,6 +35,7 @@ import { PaymentsPage }            from './pages/payments/PaymentsPage'
 import { SettingsPage }            from './pages/settings/SettingsPage'
 import { TemplatesPage }           from './pages/templates/TemplatesPage'
 import { TaskTemplatesPage }       from './pages/tasks/TaskTemplatesPage'
+import { VendorsPage }             from './pages/vendors/VendorsPage'
 import { ReportsPage }             from './pages/reports/ReportsPage'
 import { ShortagesPage }           from './pages/shortages/ShortagesPage'
 
@@ -121,6 +122,7 @@ export default function App() {
             <Route path="scanner"   element={<QRScannerPage />} />
             <Route path="tasks"          element={<TasksPage />} />
             <Route path="task-templates" element={<RoleGuard roles={ADMIN_ROLES}><TaskTemplatesPage /></RoleGuard>} />
+            <Route path="vendors"        element={<RoleGuard roles={ADMIN_ROLES}><VendorsPage /></RoleGuard>} />
             <Route path="templates" element={<RoleGuard roles={ADMIN_ROLES}><TemplatesPage /></RoleGuard>} />
             <Route path="shortages" element={<RoleGuard roles={FIELD_ROLES}><ShortagesPage /></RoleGuard>} />
             <Route path="reports"   element={<RoleGuard roles={['super_admin','event_manager','office_staff','onsite_staff']}><ReportsPage /></RoleGuard>} />

@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { Header } from '../../components/layout/Header'
 import { PriorityBadge, ShortageStatusBadge } from '../../components/ui/Badge'
 import { useShortagesByOrg, useUpdateShortageStatus, type ShortageActionPayload } from '../../hooks/useShortages'
+import { useVendors } from '../../hooks/useVendors'
 import { useRole } from '../../hooks/useRole'
 import { cn, timeAgo } from '../../lib/utils'
 import type { Priority, ShortageStatus } from '../../types'
-import { AlertTriangle, Check, X, Loader2, Package, Filter, ExternalLink, PackagePlus } from 'lucide-react'
+import { AlertTriangle, Check, X, Loader2, Package, Filter, ExternalLink, PackagePlus, MessageCircle, Store } from 'lucide-react'
 
 type FilterOption = 'all' | 'pending' | 'approved' | 'rejected'
 
@@ -21,11 +22,14 @@ export function ShortagesPage() {
   const navigate = useNavigate()
   const { isAdmin } = useRole()
   const { data: shortages = [], isLoading } = useShortagesByOrg()
+  const { data: vendors = [] } = useVendors()
   const updateStatus = useUpdateShortageStatus('')
   const [filter, setFilter] = useState<FilterOption>('pending')
   const [actionModal, setActionModal] = useState<ShortageActionPayload & { itemName: string; requestedQty: number } | null>(null)
   const [approvedQty, setApprovedQty] = useState('')
   const [reviewNote, setReviewNote] = useState('')
+  const [vendorModal, setVendorModal] = useState<{ itemName: string; qty: number; eventTitle: string } | null>(null)
+  const [selectedVendorId, setSelectedVendorId] = useState('')
 
   const filtered = (shortages as any[]).filter((s: any) => {
     if (filter === 'all') return true
@@ -141,6 +145,23 @@ export function ShortagesPage() {
                     )}
                   </div>
 
+                  {s.status === 'approved' && isAdmin() && (
+                    <button
+                      onClick={() => {
+                        setSelectedVendorId('')
+                        setVendorModal({
+                          itemName: ci?.name ?? 'Item',
+                          qty: s.approved_qty ?? s.additional_qty_requested,
+                          eventTitle: (s.event_operation_plans as any)?.events?.title ?? 'Event',
+                        })
+                      }}
+                      className="btn btn-secondary btn-sm shrink-0"
+                      title="Notify Vendor via WhatsApp"
+                    >
+                      <MessageCircle className="w-4 h-4 text-emerald-600" /> Notify Vendor
+                    </button>
+                  )}
+
                   {s.status === 'pending' && isAdmin() && (
                     <div className="flex gap-2 shrink-0">
                       <button
@@ -182,6 +203,61 @@ export function ShortagesPage() {
           })}
         </div>
       </main>
+
+      {/* Vendor notify modal */}
+      {vendorModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="card w-full max-w-sm p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <MessageCircle className="w-5 h-5 text-emerald-600" />
+              <h2 className="font-bold text-slate-900">Notify Vendor</h2>
+            </div>
+            <p className="text-sm text-slate-500 mb-4">
+              Item: <strong className="text-slate-800">{vendorModal.itemName}</strong> · Qty: <strong className="text-emerald-600">+{vendorModal.qty}</strong>
+            </p>
+            {vendors.length === 0 ? (
+              <div className="text-center py-4">
+                <p className="text-sm text-slate-400 mb-3">No vendors added yet</p>
+                <button onClick={() => { setVendorModal(null); navigate('/vendors') }} className="btn btn-primary btn-sm">
+                  <Store className="w-4 h-4" /> Add Vendors
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="mb-4">
+                  <label className="label">Select Vendor</label>
+                  <select value={selectedVendorId} onChange={e => setSelectedVendorId(e.target.value)} className="input">
+                    <option value="">Choose vendor…</option>
+                    {(vendors as any[]).map((v: any) => (
+                      <option key={v.id} value={v.id}>{v.name}{v.category ? ` — ${v.category}` : ''}</option>
+                    ))}
+                  </select>
+                </div>
+                {selectedVendorId && (() => {
+                  const v = (vendors as any[]).find((x: any) => x.id === selectedVendorId)
+                  if (!v) return null
+                  const phone = v.phone.replace(/\D/g, '')
+                  const msg = encodeURIComponent(
+                    `Hi ${v.name},\n\nWe need *${vendorModal.qty} units* of *${vendorModal.itemName}* for the event *${vendorModal.eventTitle}*.\n\nPlease confirm availability and delivery.\n\nThank you,\nUniklifeOps`
+                  )
+                  return (
+                    <a
+                      href={`https://wa.me/91${phone}?text=${msg}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-primary w-full mb-3"
+                      onClick={() => setVendorModal(null)}
+                    >
+                      <MessageCircle className="w-4 h-4" /> Open WhatsApp
+                    </a>
+                  )
+                })()}
+              </>
+            )}
+            <button onClick={() => setVendorModal(null)} className="btn btn-secondary w-full">Cancel</button>
+          </div>
+        </div>
+      )}
 
       {/* Approve / Reject action modal */}
       {actionModal && (
