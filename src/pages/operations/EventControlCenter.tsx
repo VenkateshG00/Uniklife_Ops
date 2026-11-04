@@ -9,7 +9,7 @@ import {
   ClipboardList, AlertTriangle, CheckCircle2, Clock,
   ChevronRight, RefreshCw, ArrowLeft, XCircle, Loader2
 } from 'lucide-react'
-import { cn, timeAgo, formatDateTime } from '../../lib/utils'
+import { cn, formatDateTime } from '../../lib/utils'
 import type { ItemStatus } from '../../types'
 import { useOperationPlanById } from '../../hooks/useEvents'
 import { useChecklist, useUpdateItemStatus, useUpdateItemQty, type QtyField } from '../../hooks/useChecklist'
