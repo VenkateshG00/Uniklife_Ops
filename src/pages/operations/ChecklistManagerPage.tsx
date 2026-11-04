@@ -73,21 +73,23 @@ function ItemRowMenu({ onEdit, onDelete, canDelete }: { item: EventChecklistItem
             className="flex items-center gap-2 w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
             <Pencil className="w-3.5 h-3.5 text-slate-400" /> Edit
           </button>
-          {canDelete && !confirmDelete ? (
-            <button onClick={() => setConfirmDelete(true)}
-              className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50">
-              <Trash2 className="w-3.5 h-3.5" /> Delete
-            </button>
-          ) : canDelete ? (
-            <div className="px-3 py-2 border-t border-red-100">
-              <p className="text-xs text-red-600 mb-2 font-medium">Delete this item?</p>
-              <div className="flex gap-1.5">
-                <button onClick={() => { onDelete(); setOpen(false) }}
-                  className="flex-1 text-xs bg-red-500 text-white rounded-lg py-1 font-semibold">Yes</button>
-                <button onClick={() => setConfirmDelete(false)}
-                  className="flex-1 text-xs border border-slate-200 text-slate-600 rounded-lg py-1">No</button>
+          {canDelete && (
+            !confirmDelete ? (
+              <button onClick={() => setConfirmDelete(true)}
+                className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50">
+                <Trash2 className="w-3.5 h-3.5" /> Delete
+              </button>
+            ) : (
+              <div className="px-3 py-2 border-t border-red-100">
+                <p className="text-xs text-red-600 mb-2 font-medium">Delete this item?</p>
+                <div className="flex gap-1.5">
+                  <button onClick={() => { onDelete(); setOpen(false) }}
+                    className="flex-1 text-xs bg-red-500 text-white rounded-lg py-1 font-semibold">Yes</button>
+                  <button onClick={() => setConfirmDelete(false)}
+                    className="flex-1 text-xs border border-slate-200 text-slate-600 rounded-lg py-1">No</button>
+                </div>
               </div>
-            </div>
+            )
           )}
         </div>
       )}
