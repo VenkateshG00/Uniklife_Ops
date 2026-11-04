@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../stores/authStore'
 import { templatesService, type TemplateItem } from '../services/templates'
+import toast from 'react-hot-toast'
 
 const KEY = 'templates'
 
@@ -49,5 +50,23 @@ export function useApplyTemplate() {
   return useMutation({
     mutationFn: ({ templateId, planId }: { templateId: string; planId: string }) =>
       templatesService.applyToPlan(templateId, planId),
+  })
+}
+
+export function useSaveAsTemplate() {
+  const qc = useQueryClient()
+  const profile = useAuthStore(s => s.profile)
+  return useMutation({
+    mutationFn: (payload: { name: string; event_category: string; items: TemplateItem[] }) =>
+      templatesService.createFromChecklist({
+        organization_id: profile!.organization_id!,
+        created_by: profile!.id,
+        ...payload,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [KEY] })
+      toast.success('Saved as template')
+    },
+    onError: (err: Error) => toast.error(`Failed: ${err.message}`),
   })
 }

@@ -66,6 +66,24 @@ export const templatesService = {
     if (error) throw error
   },
 
+  async createFromChecklist(payload: {
+    organization_id: string
+    created_by: string
+    name: string
+    event_category: string
+    description?: string
+    items: TemplateItem[]
+  }): Promise<Template> {
+    const { items, ...meta } = payload
+    const { data, error } = await supabase
+      .from('operation_templates')
+      .insert({ ...meta, template_data: { items } as unknown as never })
+      .select()
+      .single()
+    if (error) throw error
+    return data as unknown as Template
+  },
+
   async applyToPlan(templateId: string, planId: string): Promise<number> {
     // Fetch template
     const { data: tpl, error: tErr } = await supabase

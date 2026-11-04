@@ -15,8 +15,9 @@ import { cn } from '../../lib/utils'
 import toast from 'react-hot-toast'
 import type { EventChecklistItem, ItemStatus, Priority } from '../../types'
 import {
-  Plus, ArrowLeft, Loader2, ClipboardList, AlertTriangle, MoreVertical, Pencil, Trash2
+  Plus, ArrowLeft, Loader2, ClipboardList, AlertTriangle, MoreVertical, Pencil, Trash2, Copy
 } from 'lucide-react'
+import { useSaveAsTemplate } from '../../hooks/useTemplates'
 
 const itemSchema = z.object({
   name:         z.string().min(1, 'Name required'),
@@ -103,6 +104,11 @@ export function ChecklistManagerPage() {
   const [editItem, setEditItem] = useState<EventChecklistItem | null>(null)
   const [saving, setSaving] = useState(false)
   const [issueNote, setIssueNote] = useState<Record<string, string>>({})
+
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false)
+  const [tplName, setTplName]     = useState('')
+  const [tplCategory, setTplCategory] = useState('')
+  const saveAsTemplate = useSaveAsTemplate()
 
   const { data: plan } = useOperationPlanById(planId ?? '')
   const { data: items = [], isLoading } = useChecklist(planId ?? '')
@@ -217,9 +223,19 @@ export function ChecklistManagerPage() {
           <button onClick={() => navigate(`/operations/${planId}`)} className="btn btn-ghost btn-sm">
             <ArrowLeft className="w-4 h-4" /> Control Center
           </button>
-          <button className="btn btn-primary" onClick={() => setShowAdd(true)}>
-            <Plus className="w-4 h-4" /> Add Item
-          </button>
+          <div className="flex items-center gap-2">
+            {items.length > 0 && (
+              <button
+                className="btn btn-secondary"
+                onClick={() => { setTplName(''); setTplCategory((ev as any)?.category ?? ''); setShowSaveTemplate(true) }}
+              >
+                <Copy className="w-4 h-4" /> Save as Template
+              </button>
+            )}
+            <button className="btn btn-primary" onClick={() => setShowAdd(true)}>
+              <Plus className="w-4 h-4" /> Add Item
+            </button>
+          </div>
         </div>
 
         {/* Summary bar */}
@@ -335,6 +351,58 @@ export function ChecklistManagerPage() {
           </div>
         )}
       </main>
+
+      <Modal open={showSaveTemplate} onClose={() => setShowSaveTemplate(false)} title="Save Checklist as Template" size="sm">
+        <div className="space-y-4">
+          <p className="text-sm text-slate-500">{items.length} items will be saved. You can apply this template to future events.</p>
+          <div>
+            <label className="label">Template Name *</label>
+            <input
+              className="input"
+              placeholder="e.g. BOSS Corporate Event"
+              value={tplName}
+              onChange={e => setTplName(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="label">Event Category *</label>
+            <input
+              className="input"
+              placeholder="e.g. Corporate, Wedding, Conference"
+              value={tplCategory}
+              onChange={e => setTplCategory(e.target.value)}
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
+            <button type="button" onClick={() => setShowSaveTemplate(false)} className="btn btn-secondary">Cancel</button>
+            <button
+              type="button"
+              disabled={!tplName.trim() || !tplCategory.trim() || saveAsTemplate.isPending}
+              className="btn btn-primary px-6"
+              onClick={() => {
+                saveAsTemplate.mutate(
+                  {
+                    name: tplName.trim(),
+                    event_category: tplCategory.trim(),
+                    items: items.map(i => ({
+                      name: i.name,
+                      unit: i.unit,
+                      required_qty: i.required_qty,
+                      item_type: i.item_type,
+                      priority: i.priority,
+                      is_critical: i.is_critical,
+                      notes: i.notes ?? undefined,
+                    })),
+                  },
+                  { onSuccess: () => setShowSaveTemplate(false) }
+                )
+              }}
+            >
+              {saveAsTemplate.isPending ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</> : 'Save Template'}
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       <Modal open={showAdd} onClose={closeForm} title={editItem ? 'Edit Checklist Item' : 'Add Checklist Item'} size="md">
         <form onSubmit={handleSubmit(onAdd)} className="space-y-4">
