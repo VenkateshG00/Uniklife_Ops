@@ -15,6 +15,7 @@ import { useOperationPlanById, useCloseEvent, useUpdateOperationPlan } from '../
 import { useChecklist, useUpdateItemStatus, useUpdateItemQty, type QtyField } from '../../hooks/useChecklist'
 import { useShortages, useUpdateShortageStatus } from '../../hooks/useShortages'
 import { useEventActivity, useRealtimeActivity } from '../../hooks/useRealtime'
+import { useRole } from '../../hooks/useRole'
 
 type FilterTab = 'all' | 'pending' | 'completed' | 'shortage' | 'critical'
 
@@ -97,6 +98,7 @@ export function EventControlCenter() {
   const updateShortage = useUpdateShortageStatus(id ?? '')
   const closeEvent   = useCloseEvent()
   const updatePlan   = useUpdateOperationPlan()
+  const { isAdmin }  = useRole()
   const planPhase    = (plan as any)?.phase as EventPhase | undefined
   const eventStatus  = (plan as any)?.events?.status as string | undefined
 
@@ -187,19 +189,25 @@ export function EventControlCenter() {
               <ArrowLeft className="w-4 h-4" /> All Operations
             </button>
             {planPhase && planPhase !== 'closed' && (
-              <select
-                value={planPhase}
-                onChange={e => updatePlan.mutate({ id: (plan as any).id, payload: { phase: e.target.value as EventPhase } })}
-                disabled={updatePlan.isPending}
-                className={cn(
-                  'text-xs font-semibold px-2.5 py-1 rounded-full border cursor-pointer appearance-none',
-                  PHASE_STYLES[planPhase] ?? 'bg-blue-50 text-blue-700 border-blue-200'
-                )}
-              >
-                {PHASE_ORDER.filter(p => p !== 'closed').map(p => (
-                  <option key={p} value={p}>{PHASE_LABELS[p]}</option>
-                ))}
-              </select>
+              isAdmin() ? (
+                <select
+                  value={planPhase}
+                  onChange={e => updatePlan.mutate({ id: (plan as any).id, payload: { phase: e.target.value as EventPhase } })}
+                  disabled={updatePlan.isPending}
+                  className={cn(
+                    'text-xs font-semibold px-2.5 py-1 rounded-full border cursor-pointer appearance-none',
+                    PHASE_STYLES[planPhase] ?? 'bg-blue-50 text-blue-700 border-blue-200'
+                  )}
+                >
+                  {PHASE_ORDER.filter(p => p !== 'closed').map(p => (
+                    <option key={p} value={p}>{PHASE_LABELS[p]}</option>
+                  ))}
+                </select>
+              ) : (
+                <span className={cn('text-xs font-semibold px-2.5 py-1 rounded-full border', PHASE_STYLES[planPhase])}>
+                  {PHASE_LABELS[planPhase]}
+                </span>
+              )
             )}
             {planPhase === 'closed' && (
               <span className="text-xs font-semibold px-2.5 py-1 rounded-full border bg-slate-100 text-slate-500 border-slate-200">
@@ -223,7 +231,7 @@ export function EventControlCenter() {
                 <span className="ml-1 bg-white/20 px-1.5 py-0.5 rounded-full text-xs">{kpis.openShortages}</span>
               )}
             </button>
-            {planPhase === 'post_event' && eventStatus !== 'completed' && (
+            {planPhase === 'post_event' && eventStatus !== 'completed' && isAdmin() && (
               <button
                 onClick={() => closeEvent.mutate({ planId: id ?? '', eventId: (plan as any).event_id })}
                 disabled={closeEvent.isPending}

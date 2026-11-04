@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { Header } from '../../components/layout/Header'
 import { Modal } from '../../components/ui/Modal'
 import { useChecklist, useUpdateItemStatus, useUpdateChecklistItem, useDeleteChecklistItem } from '../../hooks/useChecklist'
+import { useRole } from '../../hooks/useRole'
 import { useOperationPlanById } from '../../hooks/useEvents'
 import { checklistService } from '../../services/checklist'
 import { useQueryClient, useQuery } from '@tanstack/react-query'
@@ -34,7 +35,7 @@ type ItemForm = z.infer<typeof itemSchema>
 const PRIORITIES: Priority[] = ['critical', 'high', 'medium', 'low']
 const STATUS_OPTIONS: ItemStatus[] = ['pending', 'packed', 'dispatched', 'at_venue', 'issue']
 
-function ItemRowMenu({ onEdit, onDelete }: { item: EventChecklistItem; onEdit: () => void; onDelete: () => void }) {
+function ItemRowMenu({ onEdit, onDelete, canDelete }: { item: EventChecklistItem; onEdit: () => void; onDelete: () => void; canDelete: boolean }) {
   const [open, setOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [pos, setPos] = useState({ top: 0, right: 0 })
@@ -72,12 +73,12 @@ function ItemRowMenu({ onEdit, onDelete }: { item: EventChecklistItem; onEdit: (
             className="flex items-center gap-2 w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
             <Pencil className="w-3.5 h-3.5 text-slate-400" /> Edit
           </button>
-          {!confirmDelete ? (
+          {canDelete && !confirmDelete ? (
             <button onClick={() => setConfirmDelete(true)}
               className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50">
               <Trash2 className="w-3.5 h-3.5" /> Delete
             </button>
-          ) : (
+          ) : canDelete ? (
             <div className="px-3 py-2 border-t border-red-100">
               <p className="text-xs text-red-600 mb-2 font-medium">Delete this item?</p>
               <div className="flex gap-1.5">
@@ -100,6 +101,7 @@ export function ChecklistManagerPage() {
   const qc = useQueryClient()
   const orgId = useAuthStore(s => s.profile?.organization_id)
   const userId = useAuthStore(s => s.user?.id)
+  const { isAdmin } = useRole()
   const [showAdd, setShowAdd] = useState(false)
   const [editItem, setEditItem] = useState<EventChecklistItem | null>(null)
   const [saving, setSaving] = useState(false)
@@ -342,6 +344,7 @@ export function ChecklistManagerPage() {
                         item={item}
                         onEdit={() => openEdit(item)}
                         onDelete={() => deleteItem.mutate(item.id)}
+                        canDelete={isAdmin()}
                       />
                     </td>
                   </tr>

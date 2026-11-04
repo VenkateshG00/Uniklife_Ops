@@ -214,7 +214,7 @@ export function EventsPage() {
                           >
                             Open Operations <ChevronRight className="w-3.5 h-3.5" />
                           </button>
-                        ) : (
+                        ) : isAdmin() ? (
                           <button
                             onClick={() => setPlanForEvent(ev.id)}
                             className="btn btn-secondary btn-sm"
@@ -222,7 +222,7 @@ export function EventsPage() {
                           >
                             <Zap className="w-3.5 h-3.5" /> Create Plan
                           </button>
-                        )}
+                        ) : null}
                         {isAdmin() && (
                           <EventRowMenu event={ev} onEdit={() => setEditEvent(ev)} />
                         )}

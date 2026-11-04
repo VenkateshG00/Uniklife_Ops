@@ -16,9 +16,9 @@ import { useAuthStore } from '../../stores/authStore'
 
 function calcReadiness(items: Array<{ status: string; is_critical: boolean }>) {
   if (!items.length) return 0
-  const done = items.filter(i => i.status === 'done')
+  const done = items.filter(i => i.status === 'at_venue')
   const critical = items.filter(i => i.is_critical)
-  const critDone = critical.filter(i => i.status === 'done')
+  const critDone = critical.filter(i => i.status === 'at_venue')
   return Math.round(
     0.6 * (done.length / items.length) * 100 +
     0.4 * (critical.length ? (critDone.length / critical.length) * 100 : 100)
@@ -51,7 +51,7 @@ export function DashboardPage() {
   const openShortages = (allShortages as any[]).filter(s => s.status === 'pending').length
   const pendingTasks = (allTasks as any[]).filter(t => ['pending', 'in_progress'].includes(t.status)).length
   const totalCompleted = (plans ?? []).reduce((n, p) =>
-    n + ((p as any).event_checklist_items ?? []).filter((i: any) => i.status === 'done').length, 0)
+    n + ((p as any).event_checklist_items ?? []).filter((i: any) => i.status === 'at_venue').length, 0)
   const totalUpcoming = upcoming.length
 
   // My tasks (assigned to me, not completed/cancelled)

@@ -14,7 +14,7 @@ function PlanChecklist({ planId }: { planId: string }) {
   const { data: items = [], isLoading } = useChecklist(planId)
   const updateStatus = useUpdateItemStatus(planId)
 
-  const packable = items.filter(i => !['done', 'at_venue'].includes(i.status))
+  const packable = items.filter(i => i.status !== 'at_venue')
 
   if (isLoading) return (
     <div className="flex items-center gap-2 py-4 text-slate-400 text-sm">
@@ -46,7 +46,7 @@ function PlanChecklist({ planId }: { planId: string }) {
       </div>
 
       {items.map(item => {
-        const isPacked = ['packed', 'dispatched', 'at_venue', 'done'].includes(item.status)
+        const isPacked = ['packed', 'dispatched', 'at_venue'].includes(item.status)
         return (
           <div
             key={item.id}
