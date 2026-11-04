@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { checklistService } from '../services/checklist'
 import { useAuthStore } from '../stores/authStore'
-import type { ItemStatus } from '../types'
+import type { ItemStatus, EventChecklistItem } from '../types'
 import toast from 'react-hot-toast'
 
 export type QtyField = 'packed_qty' | 'venue_verified_qty' | 'returned_qty' | 'damaged_qty' | 'lost_qty'
@@ -61,8 +61,14 @@ export function useUploadChecklistPhoto(planId: string) {
   return useMutation({
     mutationFn: ({ itemId, file, currentUrls }: { itemId: string; file: File; currentUrls: string[] }) =>
       checklistService.uploadPhoto(itemId, file, currentUrls),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['checklist', planId] })
+    onSuccess: (newUrls, variables) => {
+      // Directly patch the cache so thumbnail appears immediately
+      qc.setQueryData(['checklist', planId], (old: unknown) => {
+        if (!Array.isArray(old)) return old
+        return old.map((item: EventChecklistItem & { profiles: { full_name: string } | null }) =>
+          item.id === variables.itemId ? { ...item, photo_urls: newUrls } : item
+        )
+      })
       toast.success('Photo attached')
     },
     onError: (err: Error) => toast.error(`Upload failed: ${err.message}`),
@@ -74,7 +80,14 @@ export function useRemoveChecklistPhoto(planId: string) {
   return useMutation({
     mutationFn: ({ itemId, photoUrl, currentUrls }: { itemId: string; photoUrl: string; currentUrls: string[] }) =>
       checklistService.removePhoto(itemId, photoUrl, currentUrls),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['checklist', planId] }),
+    onSuccess: (newUrls, variables) => {
+      qc.setQueryData(['checklist', planId], (old: unknown) => {
+        if (!Array.isArray(old)) return old
+        return old.map((item: EventChecklistItem & { profiles: { full_name: string } | null }) =>
+          item.id === variables.itemId ? { ...item, photo_urls: newUrls } : item
+        )
+      })
+    },
     onError: (err: Error) => toast.error(err.message),
   })
 }
