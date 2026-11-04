@@ -4,10 +4,10 @@ import { Header } from '../../components/layout/Header'
 import { KpiCard } from '../../components/ui/KpiCard'
 import { ReadinessGauge } from '../../components/ui/ReadinessGauge'
 import { ActivityFeed } from '../../components/ui/ActivityFeed'
-import { ItemStatusBadge, PriorityBadge, ShortageStatusBadge } from '../../components/ui/Badge'
+import { PriorityBadge, ShortageStatusBadge } from '../../components/ui/Badge'
 import {
   ClipboardList, AlertTriangle, CheckCircle2, Clock,
-  ChevronRight, RefreshCw, ArrowLeft, XCircle, Loader2
+  ChevronRight, RefreshCw, ArrowLeft, XCircle, Loader2, Flag
 } from 'lucide-react'
 import { cn, formatDateTime } from '../../lib/utils'
 import type { ItemStatus } from '../../types'
@@ -20,19 +20,29 @@ type FilterTab = 'all' | 'pending' | 'completed' | 'shortage' | 'critical'
 
 function calcReadiness(items: Array<{ status: string; is_critical: boolean }>) {
   if (!items.length) return 0
-  const done = items.filter(i => i.status === 'done')
+  const done = items.filter(i => i.status === 'at_venue')
   const critical = items.filter(i => i.is_critical)
-  const critDone = critical.filter(i => i.status === 'done')
+  const critDone = critical.filter(i => i.status === 'at_venue')
   return Math.round(
     0.6 * (done.length / items.length) * 100 +
     0.4 * (critical.length ? (critDone.length / critical.length) * 100 : 100)
   )
 }
 
+const STATUS_STYLES: Record<string, string> = {
+  pending:    'bg-slate-100 text-slate-600 border-slate-200',
+  packed:     'bg-blue-50 text-blue-700 border-blue-200',
+  dispatched: 'bg-amber-50 text-amber-700 border-amber-200',
+  at_venue:   'bg-emerald-50 text-emerald-700 border-emerald-200',
+  issue:      'bg-red-50 text-red-700 border-red-200',
+}
+
 export function EventControlCenter() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<FilterTab>('all')
+  const [openIssueId, setOpenIssueId] = useState<string | null>(null)
+  const [issueDrafts, setIssueDrafts] = useState<Record<string, string>>({})
 
   const { data: plan, isLoading: planLoading } = useOperationPlanById(id ?? '')
   const { data: checklist = [], isLoading: checklistLoading, refetch } = useChecklist(id ?? '')
@@ -72,23 +82,23 @@ export function EventControlCenter() {
 
   const kpis = {
     total: items.length,
-    completed: items.filter(i => i.status === 'done').length,
-    inProgress: items.filter(i => ['packed', 'dispatched', 'at_venue'].includes(i.status)).length,
+    completed: items.filter(i => i.status === 'at_venue').length,
+    inProgress: items.filter(i => ['packed', 'dispatched'].includes(i.status)).length,
     pending: items.filter(i => i.status === 'pending').length,
     blocked: items.filter(i => i.status === 'issue').length,
     openShortages: pendingShortages.length,
-    criticalAlerts: items.filter(i => i.is_critical && i.status !== 'done').length,
+    criticalAlerts: items.filter(i => i.is_critical && i.status !== 'at_venue').length,
     criticalPct: (() => {
       const crit = items.filter(i => i.is_critical)
       if (!crit.length) return 100
-      return Math.round(crit.filter(i => i.status === 'done').length / crit.length * 100)
+      return Math.round(crit.filter(i => i.status === 'at_venue').length / crit.length * 100)
     })(),
   }
 
   const filtered = items.filter(item => {
     if (activeTab === 'all') return true
     if (activeTab === 'pending') return ['pending', 'packed', 'dispatched'].includes(item.status)
-    if (activeTab === 'completed') return item.status === 'done'
+    if (activeTab === 'completed') return item.status === 'at_venue'
     if (activeTab === 'shortage') return item.status === 'issue'
     if (activeTab === 'critical') return item.is_critical
     return true
@@ -97,7 +107,7 @@ export function EventControlCenter() {
   const tabs: { key: FilterTab; label: string; count: number }[] = [
     { key: 'all',       label: 'All',        count: items.length },
     { key: 'pending',   label: 'Pending',    count: kpis.pending + kpis.inProgress },
-    { key: 'completed', label: 'Done',       count: kpis.completed },
+    { key: 'completed', label: 'At Venue',   count: kpis.completed },
     { key: 'shortage',  label: 'Issues',     count: items.filter(i => i.status === 'issue').length },
     { key: 'critical',  label: 'Critical',   count: items.filter(i => i.is_critical).length },
   ]
@@ -189,7 +199,6 @@ export function EventControlCenter() {
                   <th className="text-center px-2 py-3 text-xs font-semibold text-slate-500 uppercase hidden lg:table-cell">At Venue</th>
                   <th className="text-center px-2 py-3 text-xs font-semibold text-slate-500 uppercase hidden lg:table-cell">Returned</th>
                   <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase">Status</th>
-                  <th className="px-3 py-3" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -221,7 +230,51 @@ export function EventControlCenter() {
                             {dmgLoss} dmg/lost
                           </span>
                         )}
+                        <button
+                          title="Flag an issue"
+                          onClick={() => {
+                            setOpenIssueId(openIssueId === item.id ? null : item.id)
+                            setIssueDrafts(d => ({ ...d, [item.id]: (item as any).status_note ?? '' }))
+                          }}
+                          className={cn(
+                            'ml-auto shrink-0 p-0.5 rounded transition-colors',
+                            item.status === 'issue'
+                              ? 'text-red-500 hover:text-red-700'
+                              : 'text-slate-300 hover:text-red-400'
+                          )}
+                        >
+                          <Flag className="w-3 h-3" />
+                        </button>
                       </div>
+                      {openIssueId === item.id && (
+                        <div className="mt-1.5 flex items-center gap-1.5">
+                          <input
+                            autoFocus
+                            type="text"
+                            placeholder="Describe the issue…"
+                            value={issueDrafts[item.id] ?? ''}
+                            onChange={e => setIssueDrafts(d => ({ ...d, [item.id]: e.target.value }))}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') {
+                                updateStatus.mutate({ id: item.id, status: 'issue', statusNote: issueDrafts[item.id] })
+                                setOpenIssueId(null)
+                              }
+                              if (e.key === 'Escape') setOpenIssueId(null)
+                            }}
+                            className="flex-1 text-xs border border-red-200 rounded-lg px-2 py-1 bg-red-50 text-red-800 placeholder-red-300 outline-none focus:border-red-400"
+                          />
+                          <button
+                            onClick={() => {
+                              updateStatus.mutate({ id: item.id, status: 'issue', statusNote: issueDrafts[item.id] })
+                              setOpenIssueId(null)
+                            }}
+                            className="text-[10px] font-semibold bg-red-500 text-white rounded px-2 py-1"
+                          >Save</button>
+                        </div>
+                      )}
+                      {!openIssueId && item.status === 'issue' && (item as any).status_note && (
+                        <p className="text-[10px] text-red-500 italic mt-0.5">{(item as any).status_note}</p>
+                      )}
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <PriorityBadge priority={item.priority as any} />
                         {isReusable && <span className="text-[9px] font-semibold text-violet-600 bg-violet-50 border border-violet-200 rounded-full px-1.5 py-0.5 uppercase tracking-wide">Reusable</span>}
@@ -286,16 +339,16 @@ export function EventControlCenter() {
                       )}
                     </td>
                     <td className="px-3 py-3.5">
-                      <ItemStatusBadge status={item.status as ItemStatus} />
-                    </td>
-                    <td className="px-3 py-3.5">
                       <select
                         value={item.status}
                         onChange={(e) => updateStatus.mutate({ id: item.id, status: e.target.value as ItemStatus })}
-                        className="text-xs border border-slate-200 rounded-lg px-2 py-1 bg-white text-slate-700 cursor-pointer hover:border-brand-300"
+                        className={cn(
+                          'text-xs font-semibold border rounded-lg px-2 py-1 cursor-pointer appearance-none',
+                          STATUS_STYLES[item.status] ?? STATUS_STYLES['pending']
+                        )}
                         disabled={updateStatus.isPending}
                       >
-                        {(['pending','packed','dispatched','at_venue','done','issue'] as ItemStatus[]).map(s => (
+                        {(['pending','packed','dispatched','at_venue','issue'] as ItemStatus[]).map(s => (
                           <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
                         ))}
                       </select>
