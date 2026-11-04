@@ -91,6 +91,13 @@ export const checklistService = {
   },
 
   async removePhoto(itemId: string, photoUrl: string, currentUrls: string[]): Promise<string[]> {
+    // Extract storage path from public URL: everything after /checklist-photos/
+    const marker = '/checklist-photos/'
+    const idx = photoUrl.indexOf(marker)
+    if (idx !== -1) {
+      const storagePath = photoUrl.slice(idx + marker.length)
+      await supabase.storage.from('checklist-photos').remove([storagePath])
+    }
     const newUrls = currentUrls.filter(u => u !== photoUrl)
     const { error } = await supabase
       .from('event_checklist_items')

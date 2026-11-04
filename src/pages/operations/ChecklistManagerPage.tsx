@@ -217,7 +217,7 @@ export function ChecklistManagerPage() {
     }
   }
 
-  const done = items.filter(i => i.status === 'done').length
+  const done = items.filter(i => i.status === 'at_venue').length
 
   return (
     <>
