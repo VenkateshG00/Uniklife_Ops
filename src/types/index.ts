@@ -93,6 +93,7 @@ export interface Event {
   office_coordinator_id?: UUID
   status: 'draft' | 'published' | 'active' | 'completed' | 'cancelled'
   phase: EventPhase
+  budget?: number
   created_by: UUID
   created_at: string
   updated_at: string

@@ -1,9 +1,13 @@
 import { supabase } from '../lib/supabase'
 import type { TaskTemplate, TaskTemplateItem } from '../types'
 
+// Cast to any because Supabase generated types predate the task_templates migration
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const db = supabase as any
+
 export const taskTemplateService = {
   async list(organizationId: string): Promise<TaskTemplate[]> {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('task_templates')
       .select('*, task_template_items(*)')
       .eq('organization_id', organizationId)
@@ -19,7 +23,7 @@ export const taskTemplateService = {
     program?: string
     description?: string
   }): Promise<TaskTemplate> {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('task_templates')
       .insert(payload)
       .select()
@@ -29,7 +33,7 @@ export const taskTemplateService = {
   },
 
   async update(id: string, payload: { name?: string; program?: string; description?: string }): Promise<void> {
-    const { error } = await supabase
+    const { error } = await db
       .from('task_templates')
       .update(payload)
       .eq('id', id)
@@ -37,7 +41,7 @@ export const taskTemplateService = {
   },
 
   async delete(id: string): Promise<void> {
-    const { error } = await supabase
+    const { error } = await db
       .from('task_templates')
       .delete()
       .eq('id', id)
@@ -45,7 +49,7 @@ export const taskTemplateService = {
   },
 
   async addItem(item: Omit<TaskTemplateItem, 'id' | 'created_at'>): Promise<TaskTemplateItem> {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('task_template_items')
       .insert(item)
       .select()
@@ -55,7 +59,7 @@ export const taskTemplateService = {
   },
 
   async updateItem(id: string, payload: Partial<Omit<TaskTemplateItem, 'id' | 'template_id' | 'created_at'>>): Promise<void> {
-    const { error } = await supabase
+    const { error } = await db
       .from('task_template_items')
       .update(payload)
       .eq('id', id)
@@ -63,7 +67,7 @@ export const taskTemplateService = {
   },
 
   async deleteItem(id: string): Promise<void> {
-    const { error } = await supabase
+    const { error } = await db
       .from('task_template_items')
       .delete()
       .eq('id', id)
