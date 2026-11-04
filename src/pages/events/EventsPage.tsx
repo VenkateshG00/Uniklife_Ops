@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
 import { Header } from '../../components/layout/Header'
-import { Plus, Calendar, MapPin, Users, Loader2, Zap, UserCheck, MoreVertical, Pencil, Trash2, ChevronRight } from 'lucide-react'
+import { Plus, Calendar, MapPin, Users, Loader2, Zap, UserCheck, MoreVertical, Pencil, Trash2, ChevronRight, ArchiveRestore, X } from 'lucide-react'
 import { formatDate } from '../../lib/utils'
 import { useNavigate } from 'react-router-dom'
-import { useEvents, useDeleteEvent, useOperationPlans } from '../../hooks/useEvents'
+import { useEvents, useDeleteEvent, useRestoreEvent, useOperationPlans } from '../../hooks/useEvents'
 import { useRole } from '../../hooks/useRole'
 import { CreateEventModal } from './CreateEventModal'
 import { EditEventModal } from './EditEventModal'
@@ -98,8 +98,13 @@ export function EventsPage() {
   const { data: plans = [] } = useOperationPlans()
   const { isAdmin } = useRole()
   const [showCreateEvent, setShowCreateEvent] = useState(false)
+  const [showCancelled, setShowCancelled] = useState(false)
   const [editEvent, setEditEvent] = useState<Event | null>(null)
   const [planForEvent, setPlanForEvent] = useState<string | null>(null)
+  const restoreEvent = useRestoreEvent()
+
+  const activeEvents    = (events ?? []).filter(ev => ev.status !== 'cancelled')
+  const cancelledEvents = (events ?? []).filter(ev => ev.status === 'cancelled')
 
   // Map event_id → plan_id for direct navigation (use event_id column, always present)
   const eventPlanMap = new Map(
@@ -113,7 +118,16 @@ export function EventsPage() {
       <Header title="Events" subtitle="All registered events" />
       <main className="p-6">
         {isAdmin() && (
-          <div className="flex justify-end mb-4">
+          <div className="flex justify-end gap-2 mb-4">
+            {cancelledEvents.length > 0 && (
+              <button className="btn btn-secondary" onClick={() => setShowCancelled(true)}>
+                <ArchiveRestore className="w-4 h-4" />
+                Cancelled
+                <span className="ml-1 bg-slate-200 text-slate-600 text-xs font-bold px-1.5 py-0.5 rounded-full">
+                  {cancelledEvents.length}
+                </span>
+              </button>
+            )}
             <button className="btn btn-primary" onClick={() => setShowCreateEvent(true)}>
               <Plus className="w-4 h-4" /> New Event
             </button>
@@ -126,7 +140,7 @@ export function EventsPage() {
           </div>
         )}
 
-        {!isLoading && (!events || events.length === 0) && (
+        {!isLoading && activeEvents.length === 0 && (
           <div className="card p-12 text-center text-slate-400">
             <Calendar className="w-10 h-10 mx-auto mb-3 opacity-30" />
             <p className="font-semibold text-slate-600">No events yet</p>
@@ -139,7 +153,7 @@ export function EventsPage() {
           </div>
         )}
 
-        {events && events.length > 0 && (
+        {activeEvents.length > 0 && (
           <div className="card overflow-hidden table-scroll">
             <table className="w-full text-sm">
               <thead>
@@ -153,7 +167,7 @@ export function EventsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {events.map(ev => (
+                {activeEvents.map(ev => (
                   <tr key={ev.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-5 py-3.5">
                       <p className="font-semibold text-slate-900">{ev.title}</p>
@@ -181,8 +195,13 @@ export function EventsPage() {
                       </span>
                     </td>
                     <td className="px-3 py-3.5">
-                      <span className={`badge ${ev.status === 'published' || ev.status === 'active' ? 'badge-completed' : 'badge-pending'}`}>
-                        {ev.status}
+                      <span className={`badge ${{
+                        active: 'badge-completed',
+                        published: 'badge-completed',
+                        completed: 'badge-pending',
+                        draft: 'badge-pending',
+                      }[ev.status] ?? 'badge-pending'}`}>
+                        {{ active: 'Active', published: 'Confirmed', completed: 'Completed', draft: 'Active' }[ev.status] ?? ev.status}
                       </span>
                     </td>
                     <td className="px-3 py-3.5">
@@ -235,6 +254,42 @@ export function EventsPage() {
         preselectedEventId={planForEvent ?? undefined}
         onCreated={(id) => { setPlanForEvent(null); navigate(`/operations/${id}`) }}
       />
+
+      {/* Cancelled events panel */}
+      {showCancelled && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+              <div>
+                <h2 className="font-bold text-slate-900">Cancelled Events</h2>
+                <p className="text-xs text-slate-400 mt-0.5">Restore to make them active again</p>
+              </div>
+              <button onClick={() => setShowCancelled(false)} className="btn btn-ghost btn-sm p-1.5">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 divide-y divide-slate-50">
+              {cancelledEvents.length === 0 ? (
+                <p className="text-sm text-slate-400 text-center py-10">No cancelled events</p>
+              ) : cancelledEvents.map(ev => (
+                <div key={ev.id} className="flex items-center gap-3 px-6 py-3.5">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-slate-700">{ev.title}</p>
+                    <p className="text-xs text-slate-400">{ev.category} · {formatDate(ev.start_datetime)}</p>
+                  </div>
+                  <button
+                    onClick={() => restoreEvent.mutate(ev.id)}
+                    disabled={restoreEvent.isPending}
+                    className="btn btn-primary btn-sm shrink-0"
+                  >
+                    <ArchiveRestore className="w-3.5 h-3.5" /> Restore
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

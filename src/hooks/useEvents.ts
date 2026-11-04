@@ -67,7 +67,7 @@ export function useCreateEvent() {
         ...payload,
         organization_id: orgId!,
         created_by: userId!,
-        status: 'draft',
+        status: 'active',
         phase: 'planning',
       }),
     onSuccess: () => {
@@ -86,6 +86,18 @@ export function useUpdateEvent() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['events'] })
       toast.success('Event updated')
+    },
+    onError: (err: Error) => toast.error(`Failed: ${err.message}`),
+  })
+}
+
+export function useRestoreEvent() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => eventsService.update(id, { status: 'active' }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['events'] })
+      toast.success('Event restored')
     },
     onError: (err: Error) => toast.error(`Failed: ${err.message}`),
   })
