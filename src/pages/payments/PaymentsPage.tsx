@@ -8,9 +8,10 @@ import { usePayments, useAddPayment } from '../../hooks/usePayments'
 import { useEvents } from '../../hooks/useEvents'
 import { useOrganization } from '../../hooks/useOrganization'
 import { cn, formatDate } from '../../lib/utils'
-import { Plus, IndianRupee, Loader2, CreditCard, TrendingDown, Printer, FileSpreadsheet } from 'lucide-react'
+import { Plus, IndianRupee, Loader2, CreditCard, TrendingDown, Printer, FileSpreadsheet, Pencil, Check, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import * as XLSX from 'xlsx'
+import { useUpdateEvent } from '../../hooks/useEvents'
 
 const EXPENSE_CATEGORIES = [
   'Venue & Hall', 'Catering & Food', 'Decoration', 'AV & Technical',
@@ -49,9 +50,24 @@ export function PaymentsPage() {
 
   const { data: expenses = [], isLoading } = usePayments(eventId)
   const addExpense = useAddPayment(eventId)
+  const updateEvent = useUpdateEvent()
   const { data: org } = useOrganization()
 
+  const [editingBudget, setEditingBudget] = useState(false)
+  const [budgetInput, setBudgetInput] = useState('')
+
   const totalSpent = expenses.reduce((s, p) => s + Number(p.amount), 0)
+  const budget = selectedEvent?.budget ?? 0
+  const budgetPct = budget > 0 ? Math.min(Math.round((totalSpent / budget) * 100), 100) : 0
+  const overspend = budget > 0 && totalSpent > budget
+
+  function saveBudget() {
+    const val = parseFloat(budgetInput)
+    if (isNaN(val) || val < 0) { toast.error('Enter a valid budget amount'); return }
+    updateEvent.mutate({ id: eventId, payload: { budget: val } }, {
+      onSuccess: () => { setEditingBudget(false); toast.success('Budget updated') },
+    })
+  }
 
   // Category breakdown
   const byCategory = EXPENSE_CATEGORIES.map(cat => ({
@@ -319,6 +335,69 @@ export function PaymentsPage() {
 
         {eventId && (
           <>
+            {/* Budget vs Actual */}
+            <div className="card p-5">
+              <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <IndianRupee className="w-4 h-4 text-brand-500" />
+                  <span className="text-sm font-bold text-slate-800">Budget vs Actual</span>
+                </div>
+                {!editingBudget ? (
+                  <button
+                    onClick={() => { setBudgetInput(budget > 0 ? String(budget) : ''); setEditingBudget(true) }}
+                    className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-brand-600 font-medium"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                    {budget > 0 ? 'Edit Budget' : 'Set Budget'}
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      value={budgetInput}
+                      onChange={e => setBudgetInput(e.target.value)}
+                      placeholder="Enter budget (₹)"
+                      className="input text-sm h-8 w-40"
+                      autoFocus
+                      onKeyDown={e => { if (e.key === 'Enter') saveBudget(); if (e.key === 'Escape') setEditingBudget(false) }}
+                    />
+                    <button onClick={saveBudget} disabled={updateEvent.isPending} className="btn btn-primary btn-sm h-8">
+                      <Check className="w-3.5 h-3.5" />
+                    </button>
+                    <button onClick={() => setEditingBudget(false)} className="btn btn-secondary btn-sm h-8">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {budget > 0 ? (
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-3 bg-slate-100 rounded-full overflow-hidden">
+                      <div
+                        className={cn('h-full rounded-full transition-all', overspend ? 'bg-red-500' : budgetPct > 80 ? 'bg-amber-400' : 'bg-brand-500')}
+                        style={{ width: `${budgetPct}%` }}
+                      />
+                    </div>
+                    <span className={cn('text-sm font-bold shrink-0', overspend ? 'text-red-600' : 'text-slate-700')}>
+                      {budgetPct}%
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-slate-500 flex-wrap gap-2">
+                    <span>Spent: <strong className={cn(overspend ? 'text-red-600' : 'text-slate-800')}>{fmt(totalSpent)}</strong></span>
+                    <span>Budget: <strong className="text-slate-800">{fmt(budget)}</strong></span>
+                    {overspend
+                      ? <span className="text-red-600 font-semibold">Over by {fmt(totalSpent - budget)}</span>
+                      : <span className="text-emerald-600 font-semibold">Remaining {fmt(budget - totalSpent)}</span>
+                    }
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-slate-400">No budget set — click "Set Budget" to track spending against a target</p>
+              )}
+            </div>
+
             {/* Category breakdown */}
             {byCategory.length > 0 && (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
