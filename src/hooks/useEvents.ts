@@ -78,6 +78,31 @@ export function useCreateEvent() {
   })
 }
 
+export function useUpdateEvent() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: Partial<Event> }) =>
+      eventsService.update(id, payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['events'] })
+      toast.success('Event updated')
+    },
+    onError: (err: Error) => toast.error(`Failed: ${err.message}`),
+  })
+}
+
+export function useDeleteEvent() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => eventsService.softDelete(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['events'] })
+      toast.success('Event moved to cancelled')
+    },
+    onError: (err: Error) => toast.error(`Failed: ${err.message}`),
+  })
+}
+
 export function useCreateOperationPlan() {
   const qc = useQueryClient()
   const orgId = useAuthStore(s => s.profile?.organization_id)

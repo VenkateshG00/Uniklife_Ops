@@ -1,18 +1,84 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Header } from '../../components/layout/Header'
-import { Plus, Calendar, MapPin, Users, Loader2, Zap, UserCheck } from 'lucide-react'
+import { Plus, Calendar, MapPin, Users, Loader2, Zap, UserCheck, MoreVertical, Pencil, Trash2 } from 'lucide-react'
 import { formatDate } from '../../lib/utils'
 import { useNavigate } from 'react-router-dom'
-import { useEvents } from '../../hooks/useEvents'
+import { useEvents, useDeleteEvent } from '../../hooks/useEvents'
 import { useRole } from '../../hooks/useRole'
 import { CreateEventModal } from './CreateEventModal'
+import { EditEventModal } from './EditEventModal'
 import { CreateOperationPlanModal } from '../operations/CreateOperationPlanModal'
+import type { Event } from '../../types'
+
+function EventRowMenu({ event, onEdit }: { event: Event; onEdit: () => void }) {
+  const [open, setOpen] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  const deleteEvent = useDeleteEvent()
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false)
+        setConfirmDelete(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => { setOpen(o => !o); setConfirmDelete(false) }}
+        className="btn btn-ghost btn-sm p-1.5"
+        title="More options"
+      >
+        <MoreVertical className="w-4 h-4" />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1 w-44 bg-white border border-slate-200 rounded-xl shadow-lg z-50 py-1">
+          <button
+            onClick={() => { setOpen(false); onEdit() }}
+            className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+          >
+            <Pencil className="w-3.5 h-3.5 text-slate-400" /> Edit Event
+          </button>
+          {!confirmDelete ? (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Delete Event
+            </button>
+          ) : (
+            <div className="px-3 py-2 border-t border-red-100">
+              <p className="text-xs text-red-600 mb-2 font-medium">Move to cancelled?</p>
+              <div className="flex gap-1.5">
+                <button
+                  onClick={() => { deleteEvent.mutate(event.id); setOpen(false) }}
+                  className="flex-1 text-xs bg-red-500 text-white rounded-lg py-1 font-semibold hover:bg-red-600"
+                  disabled={deleteEvent.isPending}
+                >Confirm</button>
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  className="flex-1 text-xs border border-slate-200 text-slate-600 rounded-lg py-1 hover:bg-slate-50"
+                >Cancel</button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
 
 export function EventsPage() {
   const navigate = useNavigate()
   const { data: events, isLoading } = useEvents()
   const { isAdmin } = useRole()
   const [showCreateEvent, setShowCreateEvent] = useState(false)
+  const [editEvent, setEditEvent] = useState<Event | null>(null)
   const [planForEvent, setPlanForEvent] = useState<string | null>(null)
 
   return (
@@ -107,6 +173,9 @@ export function EventsPage() {
                         >
                           <Zap className="w-3.5 h-3.5" />
                         </button>
+                        {isAdmin() && (
+                          <EventRowMenu event={ev} onEdit={() => setEditEvent(ev)} />
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -121,6 +190,14 @@ export function EventsPage() {
         open={showCreateEvent}
         onClose={() => setShowCreateEvent(false)}
       />
+
+      {editEvent && (
+        <EditEventModal
+          open={!!editEvent}
+          onClose={() => setEditEvent(null)}
+          event={editEvent}
+        />
+      )}
 
       <CreateOperationPlanModal
         open={!!planForEvent}

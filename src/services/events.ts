@@ -33,6 +33,26 @@ export const eventsService = {
     return data as Event
   },
 
+  async update(id: string, payload: Partial<Event>) {
+    const { data, error } = await supabase
+      .from('events')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .update({ ...payload as any, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return data as Event
+  },
+
+  async softDelete(id: string) {
+    const { error } = await supabase
+      .from('events')
+      .update({ status: 'cancelled', updated_at: new Date().toISOString() } as never)
+      .eq('id', id)
+    if (error) throw error
+  },
+
   async upcoming(organizationId: string, days = 14) {
     const cutoff = new Date(Date.now() + days * 86400000).toISOString()
     const { data, error } = await supabase
