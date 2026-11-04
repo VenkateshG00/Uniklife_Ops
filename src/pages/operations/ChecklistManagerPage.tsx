@@ -328,7 +328,7 @@ export function ChecklistManagerPage() {
                     </td>
                     <td className="px-3 py-3.5 hidden md:table-cell">
                       <span className={`badge ${item.item_type === 'reusable' ? 'badge-inprogress' : 'badge-pending'}`}>
-                        {item.item_type}
+                        {item.item_type === 'reusable' ? 'Return' : 'No Return'}
                       </span>
                     </td>
                     <td className="px-3 py-3.5 text-right font-mono text-slate-700">
