@@ -1,14 +1,18 @@
 -- ─────────────────────────────────────────────────────────────────
 -- 015 · Auto-populate event_activity_log via DB triggers
--- Covers: checklist item status changes, shortage requests,
---         operation plan phase advances, event closure
+-- Uses row columns for actor (no auth.uid() — unreliable in triggers)
+--   checklist  → last_updated_by
+--   shortage   → requested_by / reviewed_by
+--   plan phase → created_by
+--   event      → created_by
 -- ─────────────────────────────────────────────────────────────────
 
--- ── Shared helper (SECURITY DEFINER so it can read profiles) ────
+-- ── Shared helper ────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION _activity_log_insert(
   p_event_id    UUID,
   p_plan_id     UUID,
   p_org_id      UUID,
+  p_actor_id    UUID,
   p_action      TEXT,
   p_entity_type TEXT,
   p_entity_id   UUID,
@@ -17,29 +21,33 @@ CREATE OR REPLACE FUNCTION _activity_log_insert(
   p_new_value   JSONB DEFAULT NULL
 ) RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
-  v_actor_id   UUID;
   v_actor_name TEXT;
 BEGIN
-  v_actor_id := auth.uid();
-  IF v_actor_id IS NULL THEN RETURN; END IF;   -- skip service-role / bg jobs
+  IF p_actor_id IS NULL OR p_event_id IS NULL OR p_org_id IS NULL THEN
+    RETURN;
+  END IF;
 
   SELECT COALESCE(full_name, 'Unknown')
     INTO v_actor_name
-    FROM profiles WHERE id = v_actor_id;
+    FROM profiles WHERE id = p_actor_id;
 
   IF v_actor_name IS NULL THEN v_actor_name := 'Unknown'; END IF;
 
-  INSERT INTO event_activity_log(
-    event_id, operation_plan_id, organization_id,
-    actor_id, actor_name,
-    action, entity_type, entity_id, entity_name,
-    old_value, new_value
-  ) VALUES (
-    p_event_id, p_plan_id, p_org_id,
-    v_actor_id, v_actor_name,
-    p_action, p_entity_type, p_entity_id, p_entity_name,
-    p_old_value, p_new_value
-  );
+  BEGIN
+    INSERT INTO event_activity_log(
+      event_id, operation_plan_id, organization_id,
+      actor_id, actor_name,
+      action, entity_type, entity_id, entity_name,
+      old_value, new_value
+    ) VALUES (
+      p_event_id, p_plan_id, p_org_id,
+      p_actor_id, v_actor_name,
+      p_action, p_entity_type, p_entity_id, p_entity_name,
+      p_old_value, p_new_value
+    );
+  EXCEPTION WHEN OTHERS THEN
+    NULL; -- never let logging break the original operation
+  END;
 END;
 $$;
 
@@ -52,6 +60,7 @@ BEGIN
       NEW.event_id,
       NEW.operation_plan_id,
       NEW.organization_id,
+      NEW.last_updated_by,          -- set by app before update
       'Item ' || NEW.name || ' → ' || NEW.status,
       'checklist_item',
       NEW.id,
@@ -74,15 +83,18 @@ CREATE OR REPLACE FUNCTION trg_fn_log_shortage()
 RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
   v_item_name TEXT;
+  v_actor_id  UUID;
 BEGIN
   SELECT COALESCE(name, 'Item') INTO v_item_name
     FROM event_checklist_items WHERE id = NEW.checklist_item_id;
 
   IF TG_OP = 'INSERT' THEN
+    v_actor_id := NEW.requested_by;
     PERFORM _activity_log_insert(
       NEW.event_id,
       NEW.operation_plan_id,
       NEW.organization_id,
+      v_actor_id,
       'Shortage raised for ' || COALESCE(v_item_name, 'Item') || ' (+' || NEW.additional_qty_requested || ')',
       'shortage_request',
       NEW.id,
@@ -91,10 +103,12 @@ BEGIN
       jsonb_build_object('qty', NEW.additional_qty_requested, 'priority', NEW.priority)
     );
   ELSIF NEW.status IS DISTINCT FROM OLD.status THEN
+    v_actor_id := COALESCE(NEW.reviewed_by, NEW.requested_by);
     PERFORM _activity_log_insert(
       NEW.event_id,
       NEW.operation_plan_id,
       NEW.organization_id,
+      v_actor_id,
       'Shortage ' || NEW.status || ' for ' || COALESCE(v_item_name, 'Item'),
       'shortage_request',
       NEW.id,
@@ -127,6 +141,7 @@ BEGIN
       NEW.event_id,
       NEW.id,
       v_org_id,
+      NEW.created_by,               -- plan creator as fallback actor
       'Phase advanced: ' || OLD.phase || ' → ' || NEW.phase,
       'operation_plan',
       NEW.id,
@@ -153,6 +168,7 @@ BEGIN
       NEW.id,
       NULL,
       NEW.organization_id,
+      NEW.created_by,
       'Event closed and marked completed',
       'event',
       NEW.id,
