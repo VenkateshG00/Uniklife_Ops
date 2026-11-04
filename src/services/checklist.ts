@@ -67,6 +67,39 @@ export const checklistService = {
     if (error) throw error
   },
 
+  async uploadPhoto(itemId: string, file: File, currentUrls: string[]): Promise<string[]> {
+    const ext  = file.name.split('.').pop() ?? 'jpg'
+    const path = `checklist/${itemId}/${Date.now()}.${ext}`
+
+    const { error: uploadError } = await supabase.storage
+      .from('checklist-photos')
+      .upload(path, file, { upsert: false })
+    if (uploadError) throw uploadError
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('checklist-photos')
+      .getPublicUrl(path)
+
+    const newUrls = [...currentUrls, publicUrl]
+    const { error: updateError } = await supabase
+      .from('event_checklist_items')
+      .update({ photo_urls: newUrls, updated_at: new Date().toISOString() })
+      .eq('id', itemId)
+    if (updateError) throw updateError
+
+    return newUrls
+  },
+
+  async removePhoto(itemId: string, photoUrl: string, currentUrls: string[]): Promise<string[]> {
+    const newUrls = currentUrls.filter(u => u !== photoUrl)
+    const { error } = await supabase
+      .from('event_checklist_items')
+      .update({ photo_urls: newUrls, updated_at: new Date().toISOString() })
+      .eq('id', itemId)
+    if (error) throw error
+    return newUrls
+  },
+
   async bulkCreate(items: Partial<EventChecklistItem>[]) {
     const { data, error } = await supabase
       .from('event_checklist_items')

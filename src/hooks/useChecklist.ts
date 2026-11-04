@@ -56,6 +56,29 @@ export function useDeleteChecklistItem(planId: string) {
   })
 }
 
+export function useUploadChecklistPhoto(planId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ itemId, file, currentUrls }: { itemId: string; file: File; currentUrls: string[] }) =>
+      checklistService.uploadPhoto(itemId, file, currentUrls),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['checklist', planId] })
+      toast.success('Photo attached')
+    },
+    onError: (err: Error) => toast.error(`Upload failed: ${err.message}`),
+  })
+}
+
+export function useRemoveChecklistPhoto(planId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ itemId, photoUrl, currentUrls }: { itemId: string; photoUrl: string; currentUrls: string[] }) =>
+      checklistService.removePhoto(itemId, photoUrl, currentUrls),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['checklist', planId] }),
+    onError: (err: Error) => toast.error(err.message),
+  })
+}
+
 export function useUpdateItemStatus(planId: string) {
   const qc = useQueryClient()
   const userId = useAuthStore(s => s.user?.id ?? '')

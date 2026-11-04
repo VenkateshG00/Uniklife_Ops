@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Header } from '../../components/layout/Header'
 import { Modal } from '../../components/ui/Modal'
-import { useChecklist, useUpdateItemStatus, useUpdateChecklistItem, useDeleteChecklistItem } from '../../hooks/useChecklist'
+import { useChecklist, useUpdateItemStatus, useUpdateChecklistItem, useDeleteChecklistItem, useUploadChecklistPhoto, useRemoveChecklistPhoto } from '../../hooks/useChecklist'
 import { useRole } from '../../hooks/useRole'
 import { useOperationPlanById } from '../../hooks/useEvents'
 import { checklistService } from '../../services/checklist'
@@ -16,7 +16,7 @@ import { cn } from '../../lib/utils'
 import toast from 'react-hot-toast'
 import type { EventChecklistItem, ItemStatus, Priority } from '../../types'
 import {
-  Plus, ArrowLeft, Loader2, ClipboardList, AlertTriangle, MoreVertical, Pencil, Trash2, Copy
+  Plus, ArrowLeft, Loader2, ClipboardList, AlertTriangle, MoreVertical, Pencil, Trash2, Copy, Camera, X as XIcon,
 } from 'lucide-react'
 import { useSaveAsTemplate } from '../../hooks/useTemplates'
 
@@ -119,6 +119,9 @@ export function ChecklistManagerPage() {
   const updateStatus  = useUpdateItemStatus(planId ?? '')
   const updateItem    = useUpdateChecklistItem(planId ?? '')
   const deleteItem    = useDeleteChecklistItem(planId ?? '')
+  const uploadPhoto   = useUploadChecklistPhoto(planId ?? '')
+  const removePhoto   = useRemoveChecklistPhoto(planId ?? '')
+  const [lightbox, setLightbox] = useState<string | null>(null)
 
   const { data: categories = [] } = useQuery({
     queryKey: ['material-categories'],
@@ -299,6 +302,29 @@ export function ChecklistManagerPage() {
                         <span className="font-semibold text-slate-900">{item.name}</span>
                       </div>
                       <p className="text-xs text-slate-400">{item.priority} priority · {item.unit}</p>
+                      {/* Photo strip */}
+                      {(item.photo_urls?.length ?? 0) > 0 && (
+                        <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                          {item.photo_urls!.map((url, i) => (
+                            <div key={i} className="relative group">
+                              <img
+                                src={url}
+                                alt={`photo ${i + 1}`}
+                                className="w-10 h-10 object-cover rounded-lg border border-slate-200 cursor-pointer hover:opacity-90"
+                                onClick={() => setLightbox(url)}
+                              />
+                              {isAdmin() && (
+                                <button
+                                  onClick={() => removePhoto.mutate({ itemId: item.id, photoUrl: url, currentUrls: item.photo_urls! })}
+                                  className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <XIcon className="w-2.5 h-2.5 text-white" />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </td>
                     <td className="px-3 py-3.5 hidden md:table-cell">
                       <span className={`badge ${item.item_type === 'reusable' ? 'badge-inprogress' : 'badge-pending'}`}>
@@ -342,12 +368,28 @@ export function ChecklistManagerPage() {
                       </div>
                     </td>
                     <td className="px-3 py-3.5">
-                      <ItemRowMenu
-                        item={item}
-                        onEdit={() => openEdit(item)}
-                        onDelete={() => deleteItem.mutate(item.id)}
-                        canDelete={isAdmin()}
-                      />
+                      <div className="flex items-center gap-1">
+                        <label className="btn btn-ghost btn-sm p-1.5 cursor-pointer" title="Attach photo">
+                          <Camera className="w-4 h-4 text-slate-400" />
+                          <input
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            className="hidden"
+                            onChange={e => {
+                              const file = e.target.files?.[0]
+                              if (file) uploadPhoto.mutate({ itemId: item.id, file, currentUrls: item.photo_urls ?? [] })
+                              e.target.value = ''
+                            }}
+                          />
+                        </label>
+                        <ItemRowMenu
+                          item={item}
+                          onEdit={() => openEdit(item)}
+                          onDelete={() => deleteItem.mutate(item.id)}
+                          canDelete={isAdmin()}
+                        />
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -477,6 +519,22 @@ export function ChecklistManagerPage() {
           </div>
         </form>
       </Modal>
+
+      {/* Photo lightbox */}
+      {lightbox && (
+        <div
+          className="fixed inset-0 z-[300] flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setLightbox(null)}
+        >
+          <img src={lightbox} alt="Photo" className="max-w-full max-h-[85vh] rounded-xl object-contain shadow-2xl" />
+          <button
+            onClick={() => setLightbox(null)}
+            className="absolute top-4 right-4 w-9 h-9 bg-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/40"
+          >
+            <XIcon className="w-5 h-5" />
+          </button>
+        </div>
+      )}
     </>
   )
 }
