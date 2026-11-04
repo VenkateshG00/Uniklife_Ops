@@ -12,7 +12,7 @@ import {
 import { cn, timeAgo, formatDateTime } from '../../lib/utils'
 import type { ItemStatus } from '../../types'
 import { useOperationPlanById } from '../../hooks/useEvents'
-import { useChecklist, useUpdateItemStatus } from '../../hooks/useChecklist'
+import { useChecklist, useUpdateItemStatus, useUpdateItemQty, type QtyField } from '../../hooks/useChecklist'
 import { useShortages, useUpdateShortageStatus } from '../../hooks/useShortages'
 import { useEventActivity, useRealtimeActivity } from '../../hooks/useRealtime'
 
@@ -40,7 +40,9 @@ export function EventControlCenter() {
   const { data: initialActivity = [] } = useEventActivity((plan as any)?.events?.id ?? '')
   const liveActivity = useRealtimeActivity((plan as any)?.events?.id ?? '', initialActivity)
   const updateStatus = useUpdateItemStatus(id ?? '')
+  const updateQty    = useUpdateItemQty(id ?? '')
   const updateShortage = useUpdateShortageStatus(id ?? '')
+  const planPhase = (plan as any)?.phase as string | undefined
 
   if (planLoading) {
     return (
@@ -182,14 +184,21 @@ export function EventControlCenter() {
                 <tr className="bg-slate-50 border-b border-slate-100">
                   <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase">Item</th>
                   <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase hidden md:table-cell">Category</th>
-                  <th className="text-right px-3 py-3 text-xs font-semibold text-slate-500 uppercase">Qty</th>
+                  <th className="text-center px-2 py-3 text-xs font-semibold text-slate-500 uppercase">Required</th>
+                  <th className="text-center px-2 py-3 text-xs font-semibold text-slate-500 uppercase">Ready</th>
+                  <th className="text-center px-2 py-3 text-xs font-semibold text-slate-500 uppercase hidden lg:table-cell">At Venue</th>
+                  <th className="text-center px-2 py-3 text-xs font-semibold text-slate-500 uppercase hidden lg:table-cell">Returned</th>
                   <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase">Status</th>
-                  <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase hidden lg:table-cell">Updated</th>
                   <th className="px-3 py-3" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {filtered.map(item => (
+                {filtered.map(item => {
+                  const gap = item.required_qty - (item.packed_qty ?? 0)
+                  const isReusable = item.item_type === 'reusable'
+                  const isPostEvent = planPhase === 'post_event' || planPhase === 'closed'
+                  const dmgLoss = (item.damaged_qty ?? 0) + (item.lost_qty ?? 0)
+                  return (
                   <tr key={item.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -202,22 +211,82 @@ export function EventControlCenter() {
                             <AlertTriangle className="w-2.5 h-2.5" /> Shortage
                           </span>
                         )}
+                        {gap > 0 && !pendingShortageItemIds.has(item.id) && (
+                          <span className="text-[10px] font-bold text-red-600 bg-red-50 border border-red-200 rounded-full px-1.5 py-0.5">
+                            −{gap}
+                          </span>
+                        )}
+                        {dmgLoss > 0 && (
+                          <span className="text-[10px] font-bold text-orange-600 bg-orange-50 border border-orange-200 rounded-full px-1.5 py-0.5">
+                            {dmgLoss} dmg/lost
+                          </span>
+                        )}
                       </div>
-                      <PriorityBadge priority={item.priority as any} />
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <PriorityBadge priority={item.priority as any} />
+                        {isReusable && <span className="text-[9px] font-semibold text-violet-600 bg-violet-50 border border-violet-200 rounded-full px-1.5 py-0.5 uppercase tracking-wide">Reusable</span>}
+                      </div>
                     </td>
                     <td className="px-3 py-3.5 text-slate-500 hidden md:table-cell text-xs">
                       {(item as any).material_categories?.name ?? '—'}
                     </td>
-                    <td className="px-3 py-3.5 text-right font-mono text-slate-700">
-                      {item.status === 'done' || item.status === 'at_venue'
-                        ? item.required_qty
-                        : item.packed_qty ?? 0}/{item.required_qty}
+                    <td className="px-2 py-3.5 text-center font-mono text-slate-700 font-semibold">
+                      {item.required_qty}
+                    </td>
+                    <td className="px-2 py-3.5 text-center">
+                      <input
+                        type="number"
+                        min={0}
+                        defaultValue={item.packed_qty ?? 0}
+                        onBlur={e => {
+                          const v = parseInt(e.target.value)
+                          if (!isNaN(v) && v !== item.packed_qty) {
+                            updateQty.mutate({ id: item.id, field: 'packed_qty' as QtyField, qty: v })
+                          }
+                        }}
+                        className={cn(
+                          'w-14 text-center font-mono text-sm border rounded-lg px-1 py-0.5 bg-white',
+                          gap > 0 ? 'border-red-300 text-red-700' : 'border-slate-200 text-emerald-700'
+                        )}
+                      />
+                    </td>
+                    <td className="px-2 py-3.5 text-center hidden lg:table-cell">
+                      <input
+                        type="number"
+                        min={0}
+                        defaultValue={item.venue_verified_qty ?? 0}
+                        onBlur={e => {
+                          const v = parseInt(e.target.value)
+                          if (!isNaN(v) && v !== item.venue_verified_qty) {
+                            updateQty.mutate({ id: item.id, field: 'venue_verified_qty' as QtyField, qty: v })
+                          }
+                        }}
+                        className="w-14 text-center font-mono text-sm border border-slate-200 rounded-lg px-1 py-0.5 bg-white text-slate-700"
+                      />
+                    </td>
+                    <td className="px-2 py-3.5 text-center hidden lg:table-cell">
+                      {isReusable && isPostEvent ? (
+                        <input
+                          type="number"
+                          min={0}
+                          max={item.venue_verified_qty ?? item.required_qty}
+                          defaultValue={item.returned_qty ?? 0}
+                          onBlur={e => {
+                            const v = parseInt(e.target.value)
+                            if (!isNaN(v) && v !== item.returned_qty) {
+                              updateQty.mutate({ id: item.id, field: 'returned_qty' as QtyField, qty: v })
+                            }
+                          }}
+                          className="w-14 text-center font-mono text-sm border border-violet-200 rounded-lg px-1 py-0.5 bg-violet-50 text-violet-700"
+                        />
+                      ) : isReusable ? (
+                        <span className="text-xs text-slate-300 font-mono">—</span>
+                      ) : (
+                        <span className="text-xs text-slate-200 font-mono">N/A</span>
+                      )}
                     </td>
                     <td className="px-3 py-3.5">
                       <ItemStatusBadge status={item.status as ItemStatus} />
-                    </td>
-                    <td className="px-3 py-3.5 text-xs text-slate-400 hidden lg:table-cell">
-                      {item.updated_at ? timeAgo(item.updated_at) : '—'}
                     </td>
                     <td className="px-3 py-3.5">
                       <select
@@ -232,7 +301,8 @@ export function EventControlCenter() {
                       </select>
                     </td>
                   </tr>
-                ))}
+                  )
+                })}
               </tbody>
             </table>
           )}

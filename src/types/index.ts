@@ -165,6 +165,7 @@ export interface EventChecklistItem {
   additional_approved_qty: number
   damaged_qty: number
   lost_qty: number
+  returned_qty: number
 
   // Assignment
   responsible_staff_id?: UUID

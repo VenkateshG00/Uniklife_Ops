@@ -241,6 +241,7 @@ export type Database = {
           required_qty: number
           reserved_qty: number
           responsible_staff_id: string | null
+          returned_qty: number
           status: Database["public"]["Enums"]["item_status"]
           unit: string
           updated_at: string
@@ -274,6 +275,7 @@ export type Database = {
           required_qty?: number
           reserved_qty?: number
           responsible_staff_id?: string | null
+          returned_qty?: number
           status?: Database["public"]["Enums"]["item_status"]
           unit?: string
           updated_at?: string
@@ -307,6 +309,7 @@ export type Database = {
           required_qty?: number
           reserved_qty?: number
           responsible_staff_id?: string | null
+          returned_qty?: number
           status?: Database["public"]["Enums"]["item_status"]
           unit?: string
           updated_at?: string
