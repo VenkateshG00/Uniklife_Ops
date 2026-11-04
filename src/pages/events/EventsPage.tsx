@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
 import { Header } from '../../components/layout/Header'
-import { Plus, Calendar, MapPin, Users, Loader2, Zap, UserCheck, MoreVertical, Pencil, Trash2 } from 'lucide-react'
+import { Plus, Calendar, MapPin, Users, Loader2, Zap, UserCheck, MoreVertical, Pencil, Trash2, ChevronRight } from 'lucide-react'
 import { formatDate } from '../../lib/utils'
 import { useNavigate } from 'react-router-dom'
-import { useEvents, useDeleteEvent } from '../../hooks/useEvents'
+import { useEvents, useDeleteEvent, useOperationPlans } from '../../hooks/useEvents'
 import { useRole } from '../../hooks/useRole'
 import { CreateEventModal } from './CreateEventModal'
 import { EditEventModal } from './EditEventModal'
@@ -76,10 +76,18 @@ function EventRowMenu({ event, onEdit }: { event: Event; onEdit: () => void }) {
 export function EventsPage() {
   const navigate = useNavigate()
   const { data: events, isLoading } = useEvents()
+  const { data: plans = [] } = useOperationPlans()
   const { isAdmin } = useRole()
   const [showCreateEvent, setShowCreateEvent] = useState(false)
   const [editEvent, setEditEvent] = useState<Event | null>(null)
   const [planForEvent, setPlanForEvent] = useState<string | null>(null)
+
+  // Map event_id → plan_id for direct navigation
+  const eventPlanMap = new Map(
+    (plans as { id: string; events?: { id: string } | null }[])
+      .filter(p => p.events?.id)
+      .map(p => [p.events!.id, p.id])
+  )
 
   return (
     <>
@@ -160,19 +168,22 @@ export function EventsPage() {
                     </td>
                     <td className="px-3 py-3.5">
                       <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => navigate('/operations')}
-                          className="btn btn-secondary btn-sm"
-                        >
-                          Operations
-                        </button>
-                        <button
-                          onClick={() => setPlanForEvent(ev.id)}
-                          className="btn btn-ghost btn-sm"
-                          title="Create operation plan for this event"
-                        >
-                          <Zap className="w-3.5 h-3.5" />
-                        </button>
+                        {eventPlanMap.has(ev.id) ? (
+                          <button
+                            onClick={() => navigate(`/operations/${eventPlanMap.get(ev.id)}`)}
+                            className="btn btn-primary btn-sm"
+                          >
+                            Open Operations <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => setPlanForEvent(ev.id)}
+                            className="btn btn-secondary btn-sm"
+                            title="Create operation plan for this event"
+                          >
+                            <Zap className="w-3.5 h-3.5" /> Create Plan
+                          </button>
+                        )}
                         {isAdmin() && (
                           <EventRowMenu event={ev} onEdit={() => setEditEvent(ev)} />
                         )}
