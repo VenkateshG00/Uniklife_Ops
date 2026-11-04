@@ -14,7 +14,6 @@ import {
 } from '../../hooks/useTemplates'
 import { useOperationPlans } from '../../hooks/useEvents'
 import { cn } from '../../lib/utils'
-import { UNIT_OPTIONS } from '../../lib/constants'
 import type { TemplateItem } from '../../services/templates'
 
 const EVENT_CATEGORIES = [
@@ -314,9 +313,7 @@ export function TemplatesPage() {
                           </div>
                           <div>
                             <label className="label">Unit</label>
-                            <select {...itemForm.register('unit')} className="input">
-                              {UNIT_OPTIONS.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
-                            </select>
+                            <input {...itemForm.register('unit')} className="input" placeholder="nos, kg…" />
                           </div>
                           <div>
                             <label className="label">Qty</label>
