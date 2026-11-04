@@ -7,11 +7,11 @@ import { ActivityFeed } from '../../components/ui/ActivityFeed'
 import { PriorityBadge, ShortageStatusBadge } from '../../components/ui/Badge'
 import {
   ClipboardList, AlertTriangle, CheckCircle2, Clock,
-  ChevronRight, RefreshCw, ArrowLeft, XCircle, Loader2, Flag
+  ChevronRight, RefreshCw, ArrowLeft, XCircle, Loader2, Flag, Lock
 } from 'lucide-react'
 import { cn, formatDateTime } from '../../lib/utils'
 import type { ItemStatus } from '../../types'
-import { useOperationPlanById } from '../../hooks/useEvents'
+import { useOperationPlanById, useCloseEvent } from '../../hooks/useEvents'
 import { useChecklist, useUpdateItemStatus, useUpdateItemQty, type QtyField } from '../../hooks/useChecklist'
 import { useShortages, useUpdateShortageStatus } from '../../hooks/useShortages'
 import { useEventActivity, useRealtimeActivity } from '../../hooks/useRealtime'
@@ -52,7 +52,9 @@ export function EventControlCenter() {
   const updateStatus = useUpdateItemStatus(id ?? '')
   const updateQty    = useUpdateItemQty(id ?? '')
   const updateShortage = useUpdateShortageStatus(id ?? '')
+  const closeEvent = useCloseEvent()
   const planPhase = (plan as any)?.phase as string | undefined
+  const eventStatus = (plan as any)?.events?.status as string | undefined
 
   if (planLoading) {
     return (
@@ -122,9 +124,23 @@ export function EventControlCenter() {
       <main className="p-4 md:p-6 flex flex-col gap-4 md:gap-6">
         {/* Back + actions */}
         <div className="flex items-center justify-between flex-wrap gap-3">
-          <button onClick={() => navigate('/operations')} className="btn btn-ghost btn-sm">
-            <ArrowLeft className="w-4 h-4" /> All Operations
-          </button>
+          <div className="flex items-center gap-3">
+            <button onClick={() => navigate('/operations')} className="btn btn-ghost btn-sm">
+              <ArrowLeft className="w-4 h-4" /> All Operations
+            </button>
+            {planPhase && (
+              <span className={cn(
+                'text-xs font-semibold px-2.5 py-1 rounded-full border capitalize',
+                planPhase === 'closed'      ? 'bg-slate-100 text-slate-500 border-slate-200' :
+                planPhase === 'post_event'  ? 'bg-violet-50 text-violet-700 border-violet-200' :
+                planPhase === 'event_day'   ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                planPhase === 'dispatch'    ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                'bg-blue-50 text-blue-700 border-blue-200'
+              )}>
+                {planPhase.replace(/_/g, ' ')}
+              </span>
+            )}
+          </div>
           <div className="flex gap-2 flex-wrap">
             <button onClick={() => refetch()} className="btn btn-secondary btn-sm">
               <RefreshCw className="w-4 h-4" /> Refresh
@@ -141,6 +157,22 @@ export function EventControlCenter() {
                 <span className="ml-1 bg-white/20 px-1.5 py-0.5 rounded-full text-xs">{kpis.openShortages}</span>
               )}
             </button>
+            {planPhase === 'post_event' && eventStatus !== 'completed' && (
+              <button
+                onClick={() => closeEvent.mutate({ planId: id ?? '', eventId: (plan as any).event_id })}
+                disabled={closeEvent.isPending}
+                className="btn btn-primary btn-sm bg-emerald-600 hover:bg-emerald-700 border-emerald-600"
+              >
+                {closeEvent.isPending
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Closing…</>
+                  : <><Lock className="w-4 h-4" /> Close Event</>}
+              </button>
+            )}
+            {(planPhase === 'closed' || eventStatus === 'completed') && (
+              <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5" /> Event Completed
+              </span>
+            )}
           </div>
         </div>
 

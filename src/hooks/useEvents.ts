@@ -91,6 +91,23 @@ export function useUpdateEvent() {
   })
 }
 
+export function useCloseEvent() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ planId, eventId }: { planId: string; eventId: string }) => {
+      await operationPlansService.update(planId, { phase: 'closed' })
+      await eventsService.update(eventId, { status: 'completed' })
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['events'] })
+      qc.invalidateQueries({ queryKey: ['operation-plans'] })
+      qc.invalidateQueries({ queryKey: ['operation-plan-by-id'] })
+      toast.success('Event closed and marked as completed')
+    },
+    onError: (err: Error) => toast.error(`Failed: ${err.message}`),
+  })
+}
+
 export function useRestoreEvent() {
   const qc = useQueryClient()
   return useMutation({
