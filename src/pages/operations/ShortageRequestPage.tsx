@@ -8,6 +8,7 @@ import { PriorityBadge, ShortageStatusBadge } from '../../components/ui/Badge'
 import toast from 'react-hot-toast'
 import { ArrowLeft, Plus, AlertTriangle, Check, X, MessageCircle, Loader2, PackagePlus, PackageSearch } from 'lucide-react'
 import { timeAgo, cn } from '../../lib/utils'
+import { UNIT_OPTIONS } from '../../lib/constants'
 import { useChecklist } from '../../hooks/useChecklist'
 import { checklistService } from '../../services/checklist'
 import { supabase } from '../../lib/supabase'
@@ -283,7 +284,9 @@ export function ShortageRequestPage() {
                   </div>
                   <div>
                     <label className="label">Unit *</label>
-                    <input {...regNew('unit')} className="input" placeholder="nos, pcs, kg…" />
+                    <select {...regNew('unit')} className="input">
+                      {UNIT_OPTIONS.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
+                    </select>
                   </div>
                   <div>
                     <label className="label">Quantity Needed *</label>

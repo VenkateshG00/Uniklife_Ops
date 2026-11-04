@@ -18,6 +18,7 @@ import {
   Plus, ArrowLeft, Loader2, ClipboardList, AlertTriangle, MoreVertical, Pencil, Trash2, Copy
 } from 'lucide-react'
 import { useSaveAsTemplate } from '../../hooks/useTemplates'
+import { UNIT_OPTIONS } from '../../lib/constants'
 
 const itemSchema = z.object({
   name:         z.string().min(1, 'Name required'),
@@ -415,7 +416,9 @@ export function ChecklistManagerPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="label">Unit *</label>
-              <input {...register('unit')} className="input" placeholder="nos, unit, kg, etc." />
+              <select {...register('unit')} className="input">
+                {UNIT_OPTIONS.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
+              </select>
             </div>
             <div>
               <label className="label">Required Qty *</label>
