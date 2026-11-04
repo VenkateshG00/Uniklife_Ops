@@ -2,7 +2,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Modal } from '../../components/ui/Modal'
-import { useCreateOperationPlan, useEvents } from '../../hooks/useEvents'
+import { useCreateOperationPlan, useEvents, useOperationPlans } from '../../hooks/useEvents'
 import { Loader2 } from 'lucide-react'
 import { cn, formatDate } from '../../lib/utils'
 
@@ -26,6 +26,11 @@ interface Props {
 export function CreateOperationPlanModal({ open, onClose, onCreated, preselectedEventId }: Props) {
   const createPlan = useCreateOperationPlan()
   const { data: events = [] } = useEvents()
+  const { data: plans = [] } = useOperationPlans()
+
+  // Events that already have a plan cannot have a second one (unique constraint)
+  const plannedEventIds = new Set((plans as { events?: { id: string } | null }[]).map(p => p.events?.id).filter(Boolean))
+  const availableEvents = events.filter(ev => !plannedEventIds.has(ev.id))
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -62,7 +67,7 @@ export function CreateOperationPlanModal({ open, onClose, onCreated, preselected
         <F id="event_id" label="Event *" error={errors.event_id?.message}>
           <select id="event_id" {...register('event_id')} className={cn('input', errors.event_id && 'input-error')}>
             <option value="">Select event…</option>
-            {events.map(ev => (
+            {availableEvents.map(ev => (
               <option key={ev.id} value={ev.id}>
                 {ev.title} — {formatDate(ev.start_datetime)}
               </option>
@@ -70,6 +75,12 @@ export function CreateOperationPlanModal({ open, onClose, onCreated, preselected
           </select>
           {events.length === 0 && (
             <p className="text-xs text-amber-600 mt-1">No events found. Create an event first.</p>
+          )}
+          {events.length > 0 && availableEvents.length === 0 && (
+            <p className="text-xs text-amber-600 mt-1">All events already have an operation plan.</p>
+          )}
+          {plannedEventIds.size > 0 && availableEvents.length > 0 && (
+            <p className="text-xs text-slate-400 mt-1">{plannedEventIds.size} event{plannedEventIds.size > 1 ? 's' : ''} with existing plans hidden.</p>
           )}
         </F>
 
@@ -104,7 +115,7 @@ export function CreateOperationPlanModal({ open, onClose, onCreated, preselected
           <button type="button" onClick={() => { reset(); onClose() }} className="btn btn-secondary">
             Cancel
           </button>
-          <button type="submit" disabled={createPlan.isPending || events.length === 0} className="btn btn-primary px-6">
+          <button type="submit" disabled={createPlan.isPending || availableEvents.length === 0} className="btn btn-primary px-6">
             {createPlan.isPending
               ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating…</>
               : 'Create Plan'}
