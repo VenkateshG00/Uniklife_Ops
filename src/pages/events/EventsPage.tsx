@@ -82,11 +82,11 @@ export function EventsPage() {
   const [editEvent, setEditEvent] = useState<Event | null>(null)
   const [planForEvent, setPlanForEvent] = useState<string | null>(null)
 
-  // Map event_id → plan_id for direct navigation
+  // Map event_id → plan_id for direct navigation (use event_id column, always present)
   const eventPlanMap = new Map(
-    (plans as { id: string; events?: { id: string } | null }[])
-      .filter(p => p.events?.id)
-      .map(p => [p.events!.id, p.id])
+    (plans as { id: string; event_id: string }[])
+      .filter(p => !!p.event_id)
+      .map(p => [p.event_id, p.id])
   )
 
   return (
