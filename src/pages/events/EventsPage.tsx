@@ -13,12 +13,13 @@ import type { Event } from '../../types'
 function EventRowMenu({ event, onEdit }: { event: Event; onEdit: () => void }) {
   const [open, setOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 })
+  const btnRef = useRef<HTMLButtonElement>(null)
   const deleteEvent = useDeleteEvent()
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
+      if (btnRef.current && !btnRef.current.contains(e.target as Node)) {
         setOpen(false)
         setConfirmDelete(false)
       }
@@ -27,17 +28,30 @@ function EventRowMenu({ event, onEdit }: { event: Event; onEdit: () => void }) {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  function handleOpen() {
+    if (!open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect()
+      setDropdownPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
+    }
+    setOpen(o => !o)
+    setConfirmDelete(false)
+  }
+
   return (
-    <div ref={ref} className="relative">
+    <div className="relative">
       <button
-        onClick={() => { setOpen(o => !o); setConfirmDelete(false) }}
+        ref={btnRef}
+        onClick={handleOpen}
         className="btn btn-ghost btn-sm p-1.5"
         title="More options"
       >
         <MoreVertical className="w-4 h-4" />
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-44 bg-white border border-slate-200 rounded-xl shadow-lg z-50 py-1">
+        <div
+          className="fixed w-44 bg-white border border-slate-200 rounded-xl shadow-lg z-[200] py-1"
+          style={{ top: dropdownPos.top, right: dropdownPos.right }}
+        >
           <button
             onClick={() => { setOpen(false); onEdit() }}
             className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
