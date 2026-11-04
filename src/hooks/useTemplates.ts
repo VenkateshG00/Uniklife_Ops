@@ -53,6 +53,19 @@ export function useApplyTemplate() {
   })
 }
 
+export function useUpdateTemplateMeta() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: { name: string; event_category: string; description?: string } }) =>
+      templatesService.updateMeta(id, payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [KEY] })
+      toast.success('Template updated')
+    },
+    onError: (err: Error) => toast.error(`Failed: ${err.message}`),
+  })
+}
+
 export function useSaveAsTemplate() {
   const qc = useQueryClient()
   const profile = useAuthStore(s => s.profile)

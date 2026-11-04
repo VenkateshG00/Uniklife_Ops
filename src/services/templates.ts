@@ -66,6 +66,14 @@ export const templatesService = {
     if (error) throw error
   },
 
+  async updateMeta(id: string, payload: { name: string; event_category: string; description?: string }): Promise<void> {
+    const { error } = await supabase
+      .from('operation_templates')
+      .update({ ...payload, updated_at: new Date().toISOString() })
+      .eq('id', id)
+    if (error) throw error
+  },
+
   async createFromChecklist(payload: {
     organization_id: string
     created_by: string

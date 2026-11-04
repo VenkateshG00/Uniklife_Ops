@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -6,11 +6,11 @@ import toast from 'react-hot-toast'
 import { Header } from '../../components/layout/Header'
 import {
   Plus, BookOpen, ChevronDown, ChevronUp, Trash2,
-  Loader2, X, Zap, CheckSquare, Copy,
+  Loader2, X, Zap, CheckSquare, Copy, Pencil, Check,
 } from 'lucide-react'
 import {
   useTemplates, useCreateTemplate, useUpdateTemplateItems,
-  useDeleteTemplate, useApplyTemplate,
+  useDeleteTemplate, useApplyTemplate, useUpdateTemplateMeta,
 } from '../../hooks/useTemplates'
 import { useOperationPlans } from '../../hooks/useEvents'
 import { cn } from '../../lib/utils'
@@ -49,6 +49,7 @@ export function TemplatesPage() {
   const { data: plans = [] } = useOperationPlans()
   const createTemplate = useCreateTemplate()
   const updateItems = useUpdateTemplateItems()
+  const updateMeta = useUpdateTemplateMeta()
   const deleteTemplate = useDeleteTemplate()
   const applyTemplate = useApplyTemplate()
 
@@ -56,6 +57,31 @@ export function TemplatesPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [applyingId, setApplyingId] = useState<string | null>(null)
   const [selectedPlan, setSelectedPlan] = useState('')
+
+  // Inline name/category edit
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editCategory, setEditCategory] = useState('')
+  const nameInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (editingId) nameInputRef.current?.focus()
+  }, [editingId])
+
+  function startEdit(id: string, name: string, category: string) {
+    setEditingId(id)
+    setEditName(name)
+    setEditCategory(category)
+  }
+
+  async function commitEdit(id: string, currentCategory: string) {
+    const name = editName.trim()
+    if (!name) { setEditingId(null); return }
+    await updateMeta.mutateAsync({ id, payload: { name, event_category: editCategory || currentCategory } })
+    setEditingId(null)
+  }
+
+  function cancelEdit() { setEditingId(null) }
 
   const createForm = useForm<CreateForm>({
     resolver: zodResolver(createSchema),
@@ -165,14 +191,58 @@ export function TemplatesPage() {
                     <div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center shrink-0">
                       <BookOpen className="w-5 h-5 text-brand-600" />
                     </div>
-                    <div className="min-w-0">
-                      <p className="font-bold text-slate-900 truncate">{tpl.name}</p>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="badge badge-pending">{tpl.event_category}</span>
-                        <span className="text-xs text-slate-400">{items.length} item{items.length !== 1 ? 's' : ''}</span>
-                        {tpl.is_system && <span className="badge badge-dispatched">System</span>}
-                      </div>
-                      {tpl.description && <p className="text-xs text-slate-400 mt-0.5 truncate">{tpl.description}</p>}
+                    <div className="min-w-0 flex-1">
+                      {!tpl.is_system && editingId === tpl.id ? (
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              ref={nameInputRef}
+                              value={editName}
+                              onChange={e => setEditName(e.target.value)}
+                              onKeyDown={e => {
+                                if (e.key === 'Enter') commitEdit(tpl.id, tpl.event_category)
+                                if (e.key === 'Escape') cancelEdit()
+                              }}
+                              className="input py-1 text-sm font-semibold flex-1 min-w-0"
+                              placeholder="Template name"
+                            />
+                            <button onClick={() => commitEdit(tpl.id, tpl.event_category)} className="btn btn-primary btn-sm px-2" disabled={updateMeta.isPending}>
+                              {updateMeta.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                            </button>
+                            <button onClick={cancelEdit} className="btn btn-ghost btn-sm px-2">
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                          <select
+                            value={editCategory}
+                            onChange={e => setEditCategory(e.target.value)}
+                            className="input py-1 text-xs"
+                          >
+                            {EVENT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                          </select>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-1.5">
+                            <p className="font-bold text-slate-900 truncate">{tpl.name}</p>
+                            {!tpl.is_system && (
+                              <button
+                                onClick={() => startEdit(tpl.id, tpl.name, tpl.event_category)}
+                                className="text-slate-300 hover:text-brand-500 transition-colors shrink-0"
+                                title="Edit name"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="badge badge-pending">{tpl.event_category}</span>
+                            <span className="text-xs text-slate-400">{items.length} item{items.length !== 1 ? 's' : ''}</span>
+                            {tpl.is_system && <span className="badge badge-dispatched">System</span>}
+                          </div>
+                          {tpl.description && <p className="text-xs text-slate-400 mt-0.5 truncate">{tpl.description}</p>}
+                        </>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
