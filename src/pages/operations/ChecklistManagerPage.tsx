@@ -369,12 +369,11 @@ export function ChecklistManagerPage() {
                     </td>
                     <td className="px-3 py-3.5">
                       <div className="flex items-center gap-1">
-                        <label className="btn btn-ghost btn-sm p-1.5 cursor-pointer" title="Attach photo">
-                          <Camera className="w-4 h-4 text-slate-400" />
+                        <label className="btn btn-ghost btn-sm p-1.5 cursor-pointer text-brand-500 hover:bg-brand-50" title="Attach photo">
+                          <Camera className="w-4 h-4" />
                           <input
                             type="file"
                             accept="image/*"
-                            capture="environment"
                             className="hidden"
                             onChange={e => {
                               const file = e.target.files?.[0]
