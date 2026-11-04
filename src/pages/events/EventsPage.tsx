@@ -200,8 +200,9 @@ export function EventsPage() {
                         published: 'badge-completed',
                         completed: 'badge-pending',
                         draft: 'badge-pending',
+                        cancelled: 'badge-pending',
                       }[ev.status] ?? 'badge-pending'}`}>
-                        {{ active: 'Active', published: 'Confirmed', completed: 'Completed', draft: 'Active' }[ev.status] ?? ev.status}
+                        {{ active: 'Active', published: 'Confirmed', completed: 'Completed', draft: 'Active', cancelled: 'Cancelled' }[ev.status] ?? ev.status}
                       </span>
                     </td>
                     <td className="px-3 py-3.5">

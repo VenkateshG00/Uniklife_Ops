@@ -33,7 +33,7 @@ type ItemForm = z.infer<typeof itemSchema>
 const PRIORITIES: Priority[] = ['critical', 'high', 'medium', 'low']
 const STATUS_OPTIONS: ItemStatus[] = ['pending', 'packed', 'dispatched', 'at_venue', 'issue']
 
-function ItemRowMenu({ item, onEdit, onDelete }: { item: EventChecklistItem; onEdit: () => void; onDelete: () => void }) {
+function ItemRowMenu({ onEdit, onDelete }: { item: EventChecklistItem; onEdit: () => void; onDelete: () => void }) {
   const [open, setOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [pos, setPos] = useState({ top: 0, right: 0 })
