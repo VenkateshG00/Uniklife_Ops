@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Header } from '../../components/layout/Header'
 import { Modal } from '../../components/ui/Modal'
-import { useChecklist, useUpdateItemStatus } from '../../hooks/useChecklist'
+import { useChecklist, useUpdateItemStatus, useUpdateChecklistItem, useDeleteChecklistItem } from '../../hooks/useChecklist'
 import { useOperationPlanById } from '../../hooks/useEvents'
 import { checklistService } from '../../services/checklist'
 import { useQueryClient, useQuery } from '@tanstack/react-query'
@@ -13,11 +13,10 @@ import { useAuthStore } from '../../stores/authStore'
 import { supabase } from '../../lib/supabase'
 import { cn } from '../../lib/utils'
 import toast from 'react-hot-toast'
-import type { ItemStatus, Priority } from '../../types'
+import type { EventChecklistItem, ItemStatus, Priority } from '../../types'
 import {
-  Plus, ArrowLeft, Loader2, ClipboardList, AlertTriangle
+  Plus, ArrowLeft, Loader2, ClipboardList, AlertTriangle, MoreVertical, Pencil, Trash2
 } from 'lucide-react'
-import { ItemStatusBadge } from '../../components/ui/Badge'
 
 const itemSchema = z.object({
   name:         z.string().min(1, 'Name required'),
@@ -32,7 +31,67 @@ const itemSchema = z.object({
 type ItemForm = z.infer<typeof itemSchema>
 
 const PRIORITIES: Priority[] = ['critical', 'high', 'medium', 'low']
-const STATUS_OPTIONS: ItemStatus[] = ['pending', 'packed', 'dispatched', 'at_venue', 'done', 'issue']
+const STATUS_OPTIONS: ItemStatus[] = ['pending', 'packed', 'dispatched', 'at_venue', 'issue']
+
+function ItemRowMenu({ item, onEdit, onDelete }: { item: EventChecklistItem; onEdit: () => void; onDelete: () => void }) {
+  const [open, setOpen] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [pos, setPos] = useState({ top: 0, right: 0 })
+  const btnRef = useRef<HTMLButtonElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function outside(e: MouseEvent) {
+      const t = e.target as Node
+      if (!btnRef.current?.contains(t) && !panelRef.current?.contains(t)) {
+        setOpen(false); setConfirmDelete(false)
+      }
+    }
+    document.addEventListener('mousedown', outside)
+    return () => document.removeEventListener('mousedown', outside)
+  }, [])
+
+  function toggle() {
+    if (!open && btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect()
+      setPos({ top: r.bottom + 4, right: window.innerWidth - r.right })
+    }
+    setOpen(o => !o); setConfirmDelete(false)
+  }
+
+  return (
+    <div>
+      <button ref={btnRef} onClick={toggle} className="btn btn-ghost btn-sm p-1.5" title="Options">
+        <MoreVertical className="w-4 h-4" />
+      </button>
+      {open && (
+        <div ref={panelRef} className="fixed w-40 bg-white border border-slate-200 rounded-xl shadow-lg z-[200] py-1"
+          style={{ top: pos.top, right: pos.right }}>
+          <button onClick={() => { setOpen(false); onEdit() }}
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
+            <Pencil className="w-3.5 h-3.5 text-slate-400" /> Edit
+          </button>
+          {!confirmDelete ? (
+            <button onClick={() => setConfirmDelete(true)}
+              className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50">
+              <Trash2 className="w-3.5 h-3.5" /> Delete
+            </button>
+          ) : (
+            <div className="px-3 py-2 border-t border-red-100">
+              <p className="text-xs text-red-600 mb-2 font-medium">Delete this item?</p>
+              <div className="flex gap-1.5">
+                <button onClick={() => { onDelete(); setOpen(false) }}
+                  className="flex-1 text-xs bg-red-500 text-white rounded-lg py-1 font-semibold">Yes</button>
+                <button onClick={() => setConfirmDelete(false)}
+                  className="flex-1 text-xs border border-slate-200 text-slate-600 rounded-lg py-1">No</button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
 
 export function ChecklistManagerPage() {
   const { id: planId } = useParams<{ id: string }>()
@@ -41,12 +100,15 @@ export function ChecklistManagerPage() {
   const orgId = useAuthStore(s => s.profile?.organization_id)
   const userId = useAuthStore(s => s.user?.id)
   const [showAdd, setShowAdd] = useState(false)
+  const [editItem, setEditItem] = useState<EventChecklistItem | null>(null)
   const [saving, setSaving] = useState(false)
   const [issueNote, setIssueNote] = useState<Record<string, string>>({})
 
   const { data: plan } = useOperationPlanById(planId ?? '')
   const { data: items = [], isLoading } = useChecklist(planId ?? '')
-  const updateStatus = useUpdateItemStatus(planId ?? '')
+  const updateStatus  = useUpdateItemStatus(planId ?? '')
+  const updateItem    = useUpdateChecklistItem(planId ?? '')
+  const deleteItem    = useDeleteChecklistItem(planId ?? '')
 
   const { data: categories = [] } = useQuery({
     queryKey: ['material-categories'],
@@ -69,36 +131,72 @@ export function ChecklistManagerPage() {
     defaultValues: { unit: 'nos', item_type: 'consumable', priority: 'medium', is_critical: false, required_qty: '1', category_id: '' },
   })
 
+  function openEdit(item: EventChecklistItem) {
+    setEditItem(item)
+    reset({
+      name: item.name,
+      unit: item.unit,
+      required_qty: String(item.required_qty),
+      item_type: item.item_type,
+      priority: item.priority,
+      is_critical: item.is_critical,
+      category_id: item.category_id,
+      notes: item.notes ?? '',
+    })
+    setShowAdd(true)
+  }
+
+  function closeForm() {
+    setShowAdd(false)
+    setEditItem(null)
+    reset({ unit: 'nos', item_type: 'consumable', priority: 'medium', is_critical: false, required_qty: '1', category_id: '' })
+  }
+
   const onAdd = async (values: ItemForm) => {
     if (!planId || !orgId || !userId) return
     setSaving(true)
     try {
-      await checklistService.create({
-        operation_plan_id: planId,
-        event_id: (plan as any)?.event_id,
-        organization_id: orgId,
-        name: values.name,
-        unit: values.unit,
-        required_qty: Number(values.required_qty),
-        item_type: values.item_type,
-        priority: values.priority,
-        is_critical: values.is_critical,
-        notes: values.notes || undefined,
-        status: 'pending',
-        office_status: 'not_started',
-        venue_status: 'not_received',
-        reserved_qty: 0, packed_qty: 0, dispatched_qty: 0,
-        received_qty: 0, venue_verified_qty: 0,
-        additional_requested_qty: 0, additional_approved_qty: 0,
-        damaged_qty: 0, lost_qty: 0,
-        photo_urls: [],
-        last_updated_by: userId,
-        category_id: values.category_id,
-      })
-      qc.invalidateQueries({ queryKey: ['checklist', planId] })
-      toast.success('Item added')
-      reset()
-      setShowAdd(false)
+      if (editItem) {
+        await updateItem.mutateAsync({
+          id: editItem.id,
+          payload: {
+            name: values.name,
+            unit: values.unit,
+            required_qty: Number(values.required_qty),
+            item_type: values.item_type,
+            priority: values.priority,
+            is_critical: values.is_critical,
+            notes: values.notes || undefined,
+            category_id: values.category_id,
+          },
+        })
+      } else {
+        await checklistService.create({
+          operation_plan_id: planId,
+          event_id: (plan as any)?.event_id,
+          organization_id: orgId,
+          name: values.name,
+          unit: values.unit,
+          required_qty: Number(values.required_qty),
+          item_type: values.item_type,
+          priority: values.priority,
+          is_critical: values.is_critical,
+          notes: values.notes || undefined,
+          status: 'pending',
+          office_status: 'not_started',
+          venue_status: 'not_received',
+          reserved_qty: 0, packed_qty: 0, dispatched_qty: 0,
+          received_qty: 0, venue_verified_qty: 0,
+          additional_requested_qty: 0, additional_approved_qty: 0,
+          damaged_qty: 0, lost_qty: 0,
+          photo_urls: [],
+          last_updated_by: userId,
+          category_id: values.category_id,
+        })
+        qc.invalidateQueries({ queryKey: ['checklist', planId] })
+        toast.success('Item added')
+      }
+      closeForm()
     } catch (e: any) {
       toast.error(`Failed: ${e.message}`)
     } finally {
@@ -224,7 +322,11 @@ export function ChecklistManagerPage() {
                       </div>
                     </td>
                     <td className="px-3 py-3.5">
-                      <ItemStatusBadge status={item.status} />
+                      <ItemRowMenu
+                        item={item}
+                        onEdit={() => openEdit(item)}
+                        onDelete={() => deleteItem.mutate(item.id)}
+                      />
                     </td>
                   </tr>
                 ))}
@@ -234,7 +336,7 @@ export function ChecklistManagerPage() {
         )}
       </main>
 
-      <Modal open={showAdd} onClose={() => { setShowAdd(false); reset() }} title="Add Checklist Item" size="md">
+      <Modal open={showAdd} onClose={closeForm} title={editItem ? 'Edit Checklist Item' : 'Add Checklist Item'} size="md">
         <form onSubmit={handleSubmit(onAdd)} className="space-y-4">
           <div>
             <label className="label">Item Name *</label>
@@ -293,9 +395,11 @@ export function ChecklistManagerPage() {
           </div>
 
           <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
-            <button type="button" onClick={() => { setShowAdd(false); reset() }} className="btn btn-secondary">Cancel</button>
+            <button type="button" onClick={closeForm} className="btn btn-secondary">Cancel</button>
             <button type="submit" disabled={saving} className="btn btn-primary px-6">
-              {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Adding…</> : 'Add Item'}
+              {saving
+                ? <><Loader2 className="w-4 h-4 animate-spin" /> {editItem ? 'Saving…' : 'Adding…'}</>
+                : editItem ? 'Save Changes' : 'Add Item'}
             </button>
           </div>
         </form>

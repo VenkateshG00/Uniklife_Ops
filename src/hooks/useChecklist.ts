@@ -31,6 +31,31 @@ export function useUpdateItemQty(planId: string) {
   })
 }
 
+export function useUpdateChecklistItem(planId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: Parameters<typeof checklistService.updateItem>[1] }) =>
+      checklistService.updateItem(id, payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['checklist', planId] })
+      toast.success('Item updated')
+    },
+    onError: (err: Error) => toast.error(`Failed: ${err.message}`),
+  })
+}
+
+export function useDeleteChecklistItem(planId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => checklistService.deleteItem(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['checklist', planId] })
+      toast.success('Item deleted')
+    },
+    onError: (err: Error) => toast.error(`Failed: ${err.message}`),
+  })
+}
+
 export function useUpdateItemStatus(planId: string) {
   const qc = useQueryClient()
   const userId = useAuthStore(s => s.user?.id ?? '')

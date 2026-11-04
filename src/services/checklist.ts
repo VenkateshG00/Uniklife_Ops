@@ -47,6 +47,26 @@ export const checklistService = {
     return data as EventChecklistItem
   },
 
+  async updateItem(id: string, payload: Partial<EventChecklistItem>) {
+    const { data, error } = await supabase
+      .from('event_checklist_items')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .update({ ...payload as any, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return data as EventChecklistItem
+  },
+
+  async deleteItem(id: string) {
+    const { error } = await supabase
+      .from('event_checklist_items')
+      .delete()
+      .eq('id', id)
+    if (error) throw error
+  },
+
   async bulkCreate(items: Partial<EventChecklistItem>[]) {
     const { data, error } = await supabase
       .from('event_checklist_items')
