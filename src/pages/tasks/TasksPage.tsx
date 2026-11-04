@@ -14,7 +14,7 @@ import { cn, formatDateTime } from '../../lib/utils'
 import type { TaskStatus, Priority } from '../../types'
 import {
   Loader2, CheckCircle2, Clock, ClipboardList,
-  Filter, Plus, User, Calendar, AlertTriangle, Hand, Undo2, Pencil
+  Filter, Plus, User, Calendar, AlertTriangle, Hand, Undo2, Pencil, LayoutTemplate,
 } from 'lucide-react'
 
 const STATUS_CONFIG: Record<TaskStatus, { label: string; color: string }> = {
@@ -196,9 +196,14 @@ export function TasksPage() {
           </div>
 
           {canWrite() && (
-            <button className="btn btn-primary btn-sm shrink-0" onClick={() => setShowAdd(true)}>
-              <Plus className="w-4 h-4" /> Add Task
-            </button>
+            <div className="flex items-center gap-2 shrink-0">
+              <button className="btn btn-secondary btn-sm" onClick={() => navigate('/task-templates')}>
+                <LayoutTemplate className="w-4 h-4" /> Templates
+              </button>
+              <button className="btn btn-primary btn-sm" onClick={() => setShowAdd(true)}>
+                <Plus className="w-4 h-4" /> Add Task
+              </button>
+            </div>
           )}
         </div>
 

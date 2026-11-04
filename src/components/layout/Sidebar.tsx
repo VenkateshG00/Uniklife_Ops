@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Calendar, CreditCard,
   UserCheck, ClipboardList, Package, CheckSquare,
   BarChart2, Settings, ChevronLeft, ChevronRight, Zap,
-  ShoppingCart, BookOpen, ExternalLink, LogOut, X, AlertTriangle
+  ShoppingCart, BookOpen, ExternalLink, LogOut, X, AlertTriangle, LayoutTemplate
 } from 'lucide-react'
 import { useUiStore } from '../../stores/uiStore'
 import { useAuthStore } from '../../stores/authStore'
@@ -26,7 +26,8 @@ const navItems: Array<
   { to: '/office',     label: 'Office Prep',      icon: Package,         roles: ['super_admin','event_manager','office_staff'] },
   { to: '/inventory',  label: 'Inventory',        icon: ShoppingCart,    roles: FIELD_ROLES },
   { divider: true, label: 'Management' },
-  { to: '/templates',  label: 'Templates',        icon: BookOpen,        roles: ADMIN_ROLES },
+  { to: '/templates',       label: 'Templates',       icon: BookOpen,        roles: ADMIN_ROLES },
+  { to: '/task-templates',  label: 'Task Templates',  icon: LayoutTemplate,  roles: ADMIN_ROLES },
   { to: '/reports',    label: 'Reports',          icon: BarChart2,       roles: ['super_admin','event_manager','office_staff'] },
   { to: '/settings',   label: 'Settings',         icon: Settings,        roles: ALL_ROLES },
 ]

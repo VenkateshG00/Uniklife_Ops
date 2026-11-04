@@ -350,6 +350,31 @@ export interface EventReadinessSummary {
   phase: EventPhase
 }
 
+export interface TaskTemplate {
+  id: UUID
+  organization_id: UUID
+  created_by?: UUID
+  name: string
+  program?: string
+  description?: string
+  created_at: string
+  updated_at: string
+  task_template_items?: TaskTemplateItem[]
+}
+
+export interface TaskTemplateItem {
+  id: UUID
+  template_id: UUID
+  title: string
+  description?: string
+  category: string
+  priority: string
+  default_role?: string
+  days_before_event?: number
+  sort_order: number
+  created_at: string
+}
+
 export interface KpiData {
   label: string
   value: number | string
