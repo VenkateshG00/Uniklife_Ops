@@ -78,7 +78,7 @@ export function EditEventModal({ open, onClose, event }: Props) {
         title:              event.title,
         category:           event.category,
         venue_name:         event.venue_name,
-        venue_address:      event.venue_address,
+        venue_address:      event.venue_address ?? '',
         start_datetime:     toLocalDatetime(event.start_datetime),
         end_datetime:       toLocalDatetime(event.end_datetime),
         expected_attendees: String(event.expected_attendees),

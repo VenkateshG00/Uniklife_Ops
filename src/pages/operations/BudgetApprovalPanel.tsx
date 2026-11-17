@@ -8,7 +8,7 @@ import {
   useApproveItem, useRejectItem, useCancelApproval,
 } from '../../hooks/useApproval'
 import { useBudgetItems } from '../../hooks/useBudget'
-import type { BudgetApproval, BudgetCategory } from '../../types'
+import type { BudgetCategory } from '../../types'
 
 const CATEGORIES: { key: BudgetCategory; label: string }[] = [
   { key: 'ad_spend',           label: 'Ad Spend' },

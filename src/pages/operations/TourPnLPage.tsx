@@ -372,7 +372,7 @@ export function TourPnLPage() {
                   {events.map(event => (
                     <EventPnLRow
                       key={event.id}
-                      event={event}
+                      event={event as Event}
                       sharedAllocation={getSharedAllocation(event.id)}
                       onPnLData={handlePnLData}
                     />
