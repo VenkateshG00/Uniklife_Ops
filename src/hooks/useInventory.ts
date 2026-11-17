@@ -17,8 +17,10 @@ export function useAddInventoryItem() {
   const qc = useQueryClient()
   const orgId = useAuthStore(s => s.profile?.organization_id)
   return useMutation({
-    mutationFn: (payload: Partial<InventoryItem>) =>
-      inventoryService.create({ ...payload, organization_id: orgId! }),
+    mutationFn: (payload: Partial<InventoryItem>) => {
+      if (!orgId) throw new Error('Not authenticated')
+      return inventoryService.create({ ...payload, organization_id: orgId })
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['inventory'] })
       toast.success('Item added')

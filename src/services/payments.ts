@@ -18,8 +18,7 @@ export interface Payment {
 export const paymentsService = {
   async listByEvent(eventId: string) {
     const { data, error } = await supabase
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .from('event_payments' as any)
+      .from('event_payments')
       .select('*, profiles!collected_by(full_name)')
       .eq('event_id', eventId)
       .order('payment_date', { ascending: false })
@@ -29,9 +28,8 @@ export const paymentsService = {
 
   async create(payload: Partial<Payment>) {
     const { data, error } = await supabase
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .from('event_payments' as any)
-      .insert(payload as any)
+      .from('event_payments')
+      .insert(payload as Record<string, unknown>)
       .select()
       .single()
     if (error) throw error

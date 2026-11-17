@@ -21,8 +21,10 @@ export function useCreateTaskTemplate() {
   const orgId  = useAuthStore(s => s.profile?.organization_id)
   const userId = useAuthStore(s => s.user?.id)
   return useMutation({
-    mutationFn: (payload: { name: string; program?: string; description?: string }) =>
-      taskTemplateService.create({ organization_id: orgId!, created_by: userId!, ...payload }),
+    mutationFn: (payload: { name: string; program?: string; description?: string }) => {
+      if (!orgId || !userId) throw new Error('Not authenticated')
+      return taskTemplateService.create({ organization_id: orgId, created_by: userId, ...payload })
+    },
     onSuccess: () => { qc.invalidateQueries({ queryKey: [KEY, orgId] }); toast.success('Template created') },
     onError: (e: Error) => toast.error(e.message),
   })

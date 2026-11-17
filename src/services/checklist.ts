@@ -68,6 +68,11 @@ export const checklistService = {
   },
 
   async uploadPhoto(itemId: string, file: File, currentUrls: string[]): Promise<string[]> {
+    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+    const MAX_SIZE = 5 * 1024 * 1024
+    if (!ALLOWED_TYPES.includes(file.type)) throw new Error('Only JPEG, PNG, WebP and GIF images are allowed')
+    if (file.size > MAX_SIZE) throw new Error('File size must be under 5 MB')
+
     const ext  = file.name.split('.').pop() ?? 'jpg'
     const path = `checklist/${itemId}/${Date.now()}.${ext}`
 

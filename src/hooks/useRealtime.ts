@@ -36,9 +36,11 @@ export function useRealtimeActivity(eventId: string, initialItems: EventActivity
   }, [eventId])
 
   // Sync when initialItems load
+  const serialized = JSON.stringify(initialItems.map(i => i.id))
   useEffect(() => {
     if (initialItems.length > 0) setItems(initialItems)
-  }, [initialItems.length])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serialized])
 
   return items
 }

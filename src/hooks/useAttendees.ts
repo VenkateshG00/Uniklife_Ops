@@ -16,8 +16,10 @@ export function useRegisterAttendee(eventId: string) {
   const qc = useQueryClient()
   const orgId = useAuthStore(s => s.profile?.organization_id)
   return useMutation({
-    mutationFn: (payload: Partial<Attendee>) =>
-      attendeesService.create({ ...payload, event_id: eventId, organization_id: orgId! }),
+    mutationFn: (payload: Partial<Attendee>) => {
+      if (!orgId) throw new Error('Not authenticated')
+      return attendeesService.create({ ...payload, event_id: eventId, organization_id: orgId })
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['attendees', eventId] })
       toast.success('Attendee registered')

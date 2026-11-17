@@ -19,8 +19,10 @@ export function useCreateVendor() {
   const qc = useQueryClient()
   const orgId = useAuthStore(s => s.profile?.organization_id)
   return useMutation({
-    mutationFn: (payload: { name: string; phone: string; category?: string; notes?: string }) =>
-      vendorsService.create({ organization_id: orgId!, ...payload }),
+    mutationFn: (payload: { name: string; phone: string; category?: string; notes?: string }) => {
+      if (!orgId) throw new Error('Not authenticated')
+      return vendorsService.create({ organization_id: orgId, ...payload })
+    },
     onSuccess: () => { qc.invalidateQueries({ queryKey: [KEY, orgId] }); toast.success('Vendor added') },
     onError: (e: Error) => toast.error(e.message),
   })

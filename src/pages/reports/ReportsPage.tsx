@@ -1,8 +1,9 @@
 import { useState, type ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Header } from '../../components/layout/Header'
 import { cn, formatDate, readinessPctColor, readinessPctBarColor, timeAgo } from '../../lib/utils'
 import { useEventReadiness, useIssueItems, useCategoryBreakdown, useShortageSummary } from '../../hooks/useReports'
-import { Loader2, BarChart3, AlertTriangle, CheckCircle2, Layers, Package } from 'lucide-react'
+import { Loader2, BarChart3, AlertTriangle, CheckCircle2, Layers, Package, TrendingUp, ChevronRight } from 'lucide-react'
 import { PriorityBadge, ShortageStatusBadge } from '../../components/ui/Badge'
 import type { Priority, ShortageStatus } from '../../types'
 
@@ -18,6 +19,7 @@ const phaseBadge: Record<string, string> = {
 }
 
 export function ReportsPage() {
+  const navigate = useNavigate()
   const [tab, setTab] = useState<Tab>('readiness')
 
   const { data: readiness  = [], isLoading: loadingR } = useEventReadiness()
@@ -39,6 +41,23 @@ export function ReportsPage() {
       <Header title="Reports" subtitle="Event operations analytics and summaries" />
 
       <main className="p-4 md:p-6 flex flex-col gap-4 md:gap-6">
+
+        {/* Quick Links */}
+        <button
+          onClick={() => navigate('/reports/program-history')}
+          className="card p-4 flex items-center justify-between hover:border-brand-300 transition-colors text-left w-full"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-brand-50 flex items-center justify-center">
+              <TrendingUp className="w-5 h-5 text-brand-600" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-slate-900">Program History & Comparison</p>
+              <p className="text-xs text-slate-500">Compare editions over time and across programs</p>
+            </div>
+          </div>
+          <ChevronRight className="w-4 h-4 text-slate-400" />
+        </button>
 
         {/* Summary KPIs */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

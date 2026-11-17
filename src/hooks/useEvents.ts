@@ -62,14 +62,16 @@ export function useCreateEvent() {
   const orgId = useAuthStore(s => s.profile?.organization_id)
   const userId = useAuthStore(s => s.user?.id)
   return useMutation({
-    mutationFn: (payload: Partial<Event>) =>
-      eventsService.create({
+    mutationFn: (payload: Partial<Event>) => {
+      if (!orgId || !userId) throw new Error('Not authenticated')
+      return eventsService.create({
         ...payload,
-        organization_id: orgId!,
-        created_by: userId!,
+        organization_id: orgId,
+        created_by: userId,
         status: 'active',
         phase: 'planning',
-      }),
+      })
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['events'] })
       toast.success('Event created')
@@ -150,14 +152,16 @@ export function useCreateOperationPlan() {
   const orgId = useAuthStore(s => s.profile?.organization_id)
   const userId = useAuthStore(s => s.user?.id)
   return useMutation({
-    mutationFn: (payload: Partial<EventOperationPlan>) =>
-      operationPlansService.create({
+    mutationFn: (payload: Partial<EventOperationPlan>) => {
+      if (!orgId || !userId) throw new Error('Not authenticated')
+      return operationPlansService.create({
         ...payload,
-        organization_id: orgId!,
-        created_by: userId!,
+        organization_id: orgId,
+        created_by: userId,
         overall_readiness_pct: 0,
         phase: 'planning',
-      }),
+      })
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['operation-plans'] })
       toast.success('Operation plan created')

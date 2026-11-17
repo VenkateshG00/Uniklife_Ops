@@ -94,6 +94,7 @@ export interface Event {
   status: 'draft' | 'published' | 'active' | 'completed' | 'cancelled'
   phase: EventPhase
   budget?: number
+  tour_id?: UUID
   created_by: UUID
   created_at: string
   updated_at: string
@@ -374,6 +375,168 @@ export interface TaskTemplateItem {
   days_before_event?: number
   sort_order: number
   created_at: string
+}
+
+// GST
+export type GstType = 'none' | 'cgst_sgst' | 'igst'
+export const GST_RATES = [0, 5, 12, 18, 28] as const
+
+// Budget categories
+export type BudgetCategory =
+  | 'ad_spend'
+  | 'venue_facilities'
+  | 'travel_stay'
+  | 'gifts_merchandise'
+  | 'inventory'
+  | 'other'
+
+export interface EventBudgetItem {
+  id: UUID
+  event_id: UUID
+  organization_id: UUID
+  category: BudgetCategory
+  label: string
+  description?: string
+  planned_amount: number
+  actual_amount: number
+  is_reusable: boolean
+  qty: number
+  vendor_name?: string
+  receipt_url?: string
+  notes?: string
+  gst_rate: number
+  gst_type: GstType
+  hsn_code?: string
+  created_by?: UUID
+  created_at: string
+  approval_status?: ApprovalStatus
+  updated_at: string
+}
+
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected' | 'cancelled'
+
+export interface BudgetApproval {
+  id: UUID
+  organization_id: UUID
+  event_id: UUID
+  budget_item_id?: UUID
+  requested_by: UUID
+  approved_by?: UUID
+  status: ApprovalStatus
+  amount: number
+  category?: string
+  description?: string
+  rejection_reason?: string
+  requested_at: string
+  resolved_at?: string
+  updated_at: string
+}
+
+// Revenue tracking
+export type RevenueAdjustmentType =
+  | 'refund'
+  | 'advance_booking'
+  | 'gateway_fee'
+  | 'discount'
+  | 'other'
+
+export interface EventRevenueTier {
+  id: UUID
+  event_id: UUID
+  organization_id: UUID
+  tier_name: string
+  price: number
+  seats_available: number
+  seats_sold: number
+  notes?: string
+  gst_rate?: number
+  gst_type?: GstType
+  hsn_code?: string
+  created_by?: UUID
+  created_at: string
+  updated_at: string
+}
+
+export interface EventRevenueAdjustment {
+  id: UUID
+  event_id: UUID
+  organization_id: UUID
+  type: RevenueAdjustmentType
+  label: string
+  amount: number
+  notes?: string
+  created_by?: UUID
+  created_at: string
+  updated_at: string
+}
+
+// Lead funnel / ad campaigns
+export type AdPlatform = 'meta' | 'google' | 'youtube' | 'whatsapp' | 'organic' | 'referral' | 'other'
+
+export interface EventAdCampaign {
+  id: UUID
+  event_id: UUID
+  organization_id: UUID
+  platform: AdPlatform
+  campaign_name: string
+  spend: number
+  leads_generated: number
+  leads_contacted: number
+  payment_links_sent: number
+  paid_registrations: number
+  start_date?: string
+  end_date?: string
+  notes?: string
+  created_by?: UUID
+  created_at: string
+  updated_at: string
+}
+
+// Tour grouping & rollup
+export type ProgramName = 'BOSS' | 'UBM' | 'MSGB' | 'VK-M'
+
+export type TourSplitMethod = 'equal' | 'proportional_revenue' | 'manual'
+
+export interface EventTour {
+  id: UUID
+  organization_id: UUID
+  name: string
+  program: string
+  year: number
+  notes?: string
+  created_by?: UUID
+  created_at: string
+  updated_at: string
+}
+
+export interface TourSharedCost {
+  id: UUID
+  tour_id: UUID
+  organization_id: UUID
+  label: string
+  amount: number
+  split_method: TourSplitMethod
+  notes?: string
+  created_by?: UUID
+  created_at: string
+  updated_at: string
+}
+
+export interface EventUpsell {
+  id: UUID
+  source_event_id: UUID
+  target_event_id: UUID
+  organization_id: UUID
+  attendee_name: string
+  attendee_email?: string
+  attendee_phone?: string
+  source_amount: number
+  target_amount: number
+  days_between?: number
+  notes?: string
+  created_by?: UUID
+  created_at: string
+  updated_at: string
 }
 
 export interface KpiData {

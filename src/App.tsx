@@ -16,28 +16,32 @@ import { AppLayout } from './components/layout/AppLayout'
 import { LoginPage } from './pages/auth/LoginPage'
 import { JoinPage }  from './pages/join/JoinPage'
 
-// Pages
+// Eager: pages needed immediately
 import { DashboardPage }           from './pages/dashboard/DashboardPage'
-import { EventsPage }              from './pages/events/EventsPage'
-import { OperationsListPage }      from './pages/operations/OperationsListPage'
 import { CreateOperationPlanModal }from './pages/operations/CreateOperationPlanModal'
-import { EventControlCenter }      from './pages/operations/EventControlCenter'
-import { ShortageRequestPage }     from './pages/operations/ShortageRequestPage'
-import { ChecklistManagerPage }    from './pages/operations/ChecklistManagerPage'
-import { OperationTasksPage }      from './pages/operations/OperationTasksPage'
-import { OfficePage }              from './pages/office/OfficePage'
-import { InventoryPage }           from './pages/inventory/InventoryPage'
-import { StaffPage }               from './pages/staff/StaffPage'
-import { TasksPage }               from './pages/tasks/TasksPage'
-import { AttendeesPage }           from './pages/attendees/AttendeesPage'
-import { QRScannerPage }           from './pages/scanner/QRScannerPage'
-import { PaymentsPage }            from './pages/payments/PaymentsPage'
-import { SettingsPage }            from './pages/settings/SettingsPage'
-import { TemplatesPage }           from './pages/templates/TemplatesPage'
-import { TaskTemplatesPage }       from './pages/tasks/TaskTemplatesPage'
-import { VendorsPage }             from './pages/vendors/VendorsPage'
-import { ReportsPage }             from './pages/reports/ReportsPage'
-import { ShortagesPage }           from './pages/shortages/ShortagesPage'
+
+// Lazy-loaded pages
+const EventsPage            = React.lazy(() => import('./pages/events/EventsPage').then(m => ({ default: m.EventsPage })))
+const OperationsListPage    = React.lazy(() => import('./pages/operations/OperationsListPage').then(m => ({ default: m.OperationsListPage })))
+const EventControlCenter    = React.lazy(() => import('./pages/operations/EventControlCenter').then(m => ({ default: m.EventControlCenter })))
+const TourPnLPage           = React.lazy(() => import('./pages/operations/TourPnLPage').then(m => ({ default: m.TourPnLPage })))
+const ShortageRequestPage   = React.lazy(() => import('./pages/operations/ShortageRequestPage').then(m => ({ default: m.ShortageRequestPage })))
+const ChecklistManagerPage  = React.lazy(() => import('./pages/operations/ChecklistManagerPage').then(m => ({ default: m.ChecklistManagerPage })))
+const OperationTasksPage    = React.lazy(() => import('./pages/operations/OperationTasksPage').then(m => ({ default: m.OperationTasksPage })))
+const OfficePage            = React.lazy(() => import('./pages/office/OfficePage').then(m => ({ default: m.OfficePage })))
+const InventoryPage         = React.lazy(() => import('./pages/inventory/InventoryPage').then(m => ({ default: m.InventoryPage })))
+const StaffPage             = React.lazy(() => import('./pages/staff/StaffPage').then(m => ({ default: m.StaffPage })))
+const TasksPage             = React.lazy(() => import('./pages/tasks/TasksPage').then(m => ({ default: m.TasksPage })))
+const AttendeesPage         = React.lazy(() => import('./pages/attendees/AttendeesPage').then(m => ({ default: m.AttendeesPage })))
+const QRScannerPage         = React.lazy(() => import('./pages/scanner/QRScannerPage').then(m => ({ default: m.QRScannerPage })))
+const PaymentsPage          = React.lazy(() => import('./pages/payments/PaymentsPage').then(m => ({ default: m.PaymentsPage })))
+const SettingsPage          = React.lazy(() => import('./pages/settings/SettingsPage').then(m => ({ default: m.SettingsPage })))
+const TemplatesPage         = React.lazy(() => import('./pages/templates/TemplatesPage').then(m => ({ default: m.TemplatesPage })))
+const TaskTemplatesPage     = React.lazy(() => import('./pages/tasks/TaskTemplatesPage').then(m => ({ default: m.TaskTemplatesPage })))
+const VendorsPage           = React.lazy(() => import('./pages/vendors/VendorsPage').then(m => ({ default: m.VendorsPage })))
+const ReportsPage           = React.lazy(() => import('./pages/reports/ReportsPage').then(m => ({ default: m.ReportsPage })))
+const ProgramHistoryPage    = React.lazy(() => import('./pages/reports/ProgramHistoryPage').then(m => ({ default: m.ProgramHistoryPage })))
+const ShortagesPage         = React.lazy(() => import('./pages/shortages/ShortagesPage').then(m => ({ default: m.ShortagesPage })))
 
 // Role-based landing redirect
 function RoleLanding() {
@@ -98,7 +102,7 @@ export default function App() {
           <Route path="/onsite" element={<Navigate to="/office" replace />} />
 
           {/* Main app */}
-          <Route element={<AuthGate><AppLayout /></AuthGate>}>
+          <Route element={<AuthGate><React.Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" /></div>}><AppLayout /></React.Suspense></AuthGate>}>
             {/* Index: role-based landing */}
             <Route index element={<RoleLanding />} />
 
@@ -113,6 +117,8 @@ export default function App() {
               <Route path=":id/tasks" element={<OperationTasksPage />} />
             </Route>
 
+            <Route path="tours/:tourId" element={<RoleGuard roles={ADMIN_ROLES}><TourPnLPage /></RoleGuard>} />
+
             <Route path="office"    element={<RoleGuard roles={FIELD_ROLES}><OfficePage /></RoleGuard>} />
             <Route path="inventory" element={<RoleGuard roles={FIELD_ROLES}><InventoryPage /></RoleGuard>} />
             <Route path="staff"     element={<RoleGuard roles={ADMIN_ROLES}><StaffPage /></RoleGuard>} />
@@ -126,11 +132,20 @@ export default function App() {
             <Route path="templates" element={<RoleGuard roles={ADMIN_ROLES}><TemplatesPage /></RoleGuard>} />
             <Route path="shortages" element={<RoleGuard roles={FIELD_ROLES}><ShortagesPage /></RoleGuard>} />
             <Route path="reports"   element={<RoleGuard roles={['super_admin','event_manager','office_staff','onsite_staff']}><ReportsPage /></RoleGuard>} />
+            <Route path="reports/program-history" element={<RoleGuard roles={['super_admin','event_manager','office_staff','onsite_staff']}><ProgramHistoryPage /></RoleGuard>} />
             <Route path="settings"  element={<SettingsPage />} />
           </Route>
 
-          {/* Catch-all */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          {/* 404 */}
+          <Route path="*" element={
+            <div className="min-h-screen flex items-center justify-center bg-slate-50">
+              <div className="text-center">
+                <h1 className="text-6xl font-bold text-slate-300">404</h1>
+                <p className="text-slate-500 mt-2">Page not found</p>
+                <a href="/" className="mt-4 inline-block text-brand-600 hover:underline text-sm">Go to Dashboard</a>
+              </div>
+            </div>
+          } />
         </Routes>
       </BrowserRouter>
       <Toaster

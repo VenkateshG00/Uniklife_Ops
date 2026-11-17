@@ -17,13 +17,15 @@ export function useAddPayment(eventId: string) {
   const orgId = useAuthStore(s => s.profile?.organization_id)
   const userId = useAuthStore(s => s.user?.id)
   return useMutation({
-    mutationFn: (payload: Partial<Payment>) =>
-      paymentsService.create({
+    mutationFn: (payload: Partial<Payment>) => {
+      if (!orgId) throw new Error('Not authenticated')
+      return paymentsService.create({
         ...payload,
         event_id: eventId,
-        organization_id: orgId!,
+        organization_id: orgId,
         collected_by: userId,
-      }),
+      })
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['payments', eventId] })
       toast.success('Payment recorded')

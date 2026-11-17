@@ -10,7 +10,6 @@ import { useOrganization } from '../../hooks/useOrganization'
 import { cn, formatDate } from '../../lib/utils'
 import { Plus, IndianRupee, Loader2, CreditCard, TrendingDown, Printer, FileSpreadsheet, Pencil, Check, X } from 'lucide-react'
 import toast from 'react-hot-toast'
-import * as XLSX from 'xlsx'
 import { useUpdateEvent } from '../../hooks/useEvents'
 
 const EXPENSE_CATEGORIES = [
@@ -263,7 +262,8 @@ export function PaymentsPage() {
     setTimeout(() => { win.print(); win.close() }, 400)
   }
 
-  const handleExcelExport = () => {
+  const handleExcelExport = async () => {
+    const XLSX = await import('xlsx')
     if (!expenses.length) { toast.error('No expenses to export'); return }
 
     const companyName = org?.name ?? 'UniklifeOps'

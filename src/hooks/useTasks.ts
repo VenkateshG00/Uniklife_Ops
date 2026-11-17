@@ -28,13 +28,15 @@ export function useCreateTask(planId: string) {
   const orgId = useAuthStore(s => s.profile?.organization_id)
   const userId = useAuthStore(s => s.user?.id)
   return useMutation({
-    mutationFn: (payload: Partial<EventTask>) =>
-      tasksService.create({
+    mutationFn: (payload: Partial<EventTask>) => {
+      if (!orgId || !userId) throw new Error('Not authenticated')
+      return tasksService.create({
         ...payload,
         operation_plan_id: planId,
-        organization_id: orgId!,
-        created_by: userId!,
-      }),
+        organization_id: orgId,
+        created_by: userId,
+      })
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['tasks', 'plan', planId] })
       qc.invalidateQueries({ queryKey: ['tasks', 'org'] })
@@ -50,12 +52,14 @@ export function useCreateTaskFromOrg() {
   const orgId = useAuthStore(s => s.profile?.organization_id)
   const userId = useAuthStore(s => s.user?.id)
   return useMutation({
-    mutationFn: (payload: Partial<EventTask>) =>
-      tasksService.create({
+    mutationFn: (payload: Partial<EventTask>) => {
+      if (!orgId || !userId) throw new Error('Not authenticated')
+      return tasksService.create({
         ...payload,
-        organization_id: orgId!,
-        created_by: userId!,
-      }),
+        organization_id: orgId,
+        created_by: userId,
+      })
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['tasks', 'org'] })
       toast.success('Task created')

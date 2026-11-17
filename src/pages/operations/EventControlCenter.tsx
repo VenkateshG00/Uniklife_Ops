@@ -7,7 +7,7 @@ import { ActivityFeed } from '../../components/ui/ActivityFeed'
 import { PriorityBadge, ShortageStatusBadge } from '../../components/ui/Badge'
 import {
   ClipboardList, AlertTriangle, CheckCircle2, Clock,
-  ChevronRight, RefreshCw, ArrowLeft, XCircle, Loader2, Flag, Lock
+  ChevronRight, RefreshCw, ArrowLeft, XCircle, Loader2, Flag, Lock, IndianRupee, TrendingUp, Megaphone, Map, Users
 } from 'lucide-react'
 import { cn, formatDateTime } from '../../lib/utils'
 import type { EventPhase, ItemStatus } from '../../types'
@@ -16,6 +16,13 @@ import { useChecklist, useUpdateItemStatus, useUpdateItemQty, type QtyField } fr
 import { useShortages, useUpdateShortageStatus } from '../../hooks/useShortages'
 import { useEventActivity, useRealtimeActivity } from '../../hooks/useRealtime'
 import { useRole } from '../../hooks/useRole'
+import { BudgetPanel } from './BudgetPanel'
+import { RevenuePanel } from './RevenuePanel'
+import { PnLDashboard } from './PnLDashboard'
+import { LeadFunnelPanel } from './LeadFunnelPanel'
+import { TourSelector } from './TourSelector'
+import { UpsellPanel } from './UpsellPanel'
+import { BudgetApprovalPanel } from './BudgetApprovalPanel'
 
 type FilterTab = 'all' | 'pending' | 'completed' | 'shortage' | 'critical'
 
@@ -466,6 +473,90 @@ export function EventControlCenter() {
             </table>
           )}
         </div>
+
+        {/* Budget */}
+        {ev && (
+          <div className="card p-5">
+            <div className="section-header mb-4">
+              <h2 className="section-title flex items-center gap-2">
+                <IndianRupee className="w-4 h-4 text-brand-500" /> Event Budget
+              </h2>
+            </div>
+            <BudgetPanel eventId={ev.id} isAdmin={isAdmin()} />
+          </div>
+        )}
+
+        {/* Budget Approvals */}
+        {ev && (
+          <div className="card p-5">
+            <div className="section-header mb-4">
+              <h2 className="section-title flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-amber-500" /> Budget Approvals
+              </h2>
+            </div>
+            <BudgetApprovalPanel eventId={ev.id} isAdmin={isAdmin()} />
+          </div>
+        )}
+
+        {/* Revenue & Registration */}
+        {ev && (
+          <div className="card p-5">
+            <div className="section-header mb-4">
+              <h2 className="section-title flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-emerald-500" /> Revenue & Registration
+              </h2>
+            </div>
+            <RevenuePanel eventId={ev.id} isAdmin={isAdmin()} />
+          </div>
+        )}
+
+        {/* P&L Dashboard */}
+        {ev && (
+          <div className="card p-5">
+            <div className="section-header mb-4">
+              <h2 className="section-title flex items-center gap-2">
+                <IndianRupee className="w-4 h-4 text-emerald-500" /> Profit & Loss
+              </h2>
+            </div>
+            <PnLDashboard eventId={ev.id} />
+          </div>
+        )}
+
+        {/* Lead Funnel */}
+        {ev && (
+          <div className="card p-5">
+            <div className="section-header mb-4">
+              <h2 className="section-title flex items-center gap-2">
+                <Megaphone className="w-4 h-4 text-blue-500" /> Lead Funnel
+              </h2>
+            </div>
+            <LeadFunnelPanel eventId={ev.id} isAdmin={isAdmin()} />
+          </div>
+        )}
+
+        {/* Tour Grouping */}
+        {ev && isAdmin() && (
+          <div className="card p-5">
+            <div className="section-header mb-4">
+              <h2 className="section-title flex items-center gap-2">
+                <Map className="w-4 h-4 text-purple-500" /> Tour Grouping
+              </h2>
+            </div>
+            <TourSelector eventId={ev.id} currentTourId={ev.tour_id} />
+          </div>
+        )}
+
+        {/* Post-Event Upsell */}
+        {ev && (
+          <div className="card p-5">
+            <div className="section-header mb-4">
+              <h2 className="section-title flex items-center gap-2">
+                <Users className="w-4 h-4 text-orange-500" /> Post-Event Upsell
+              </h2>
+            </div>
+            <UpsellPanel eventId={ev.id} isAdmin={isAdmin()} />
+          </div>
+        )}
 
         {/* Bottom row: Shortages + Staff + Activity */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

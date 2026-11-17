@@ -39,6 +39,86 @@ export type Database = {
   }
   public: {
     Tables: {
+      budget_approvals: {
+        Row: {
+          amount: number
+          approved_by: string | null
+          budget_item_id: string | null
+          category: string | null
+          description: string | null
+          event_id: string
+          id: string
+          organization_id: string
+          rejection_reason: string | null
+          requested_at: string
+          requested_by: string
+          resolved_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          approved_by?: string | null
+          budget_item_id?: string | null
+          category?: string | null
+          description?: string | null
+          event_id: string
+          id?: string
+          organization_id: string
+          rejection_reason?: string | null
+          requested_at?: string
+          requested_by: string
+          resolved_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          approved_by?: string | null
+          budget_item_id?: string | null
+          category?: string | null
+          description?: string | null
+          event_id?: string
+          id?: string
+          organization_id?: string
+          rejection_reason?: string | null
+          requested_at?: string
+          requested_by?: string
+          resolved_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budget_approvals_budget_item_id_fkey"
+            columns: ["budget_item_id"]
+            isOneToOne: false
+            referencedRelation: "event_budget_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budget_approvals_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "event_readiness_summary"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "budget_approvals_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budget_approvals_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_activity_log: {
         Row: {
           action: string
@@ -133,6 +213,85 @@ export type Database = {
           },
         ]
       }
+      event_ad_campaigns: {
+        Row: {
+          campaign_name: string
+          created_at: string
+          created_by: string | null
+          end_date: string | null
+          event_id: string
+          id: string
+          leads_contacted: number
+          leads_generated: number
+          notes: string | null
+          organization_id: string
+          paid_registrations: number
+          payment_links_sent: number
+          platform: string
+          spend: number
+          start_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          campaign_name: string
+          created_at?: string
+          created_by?: string | null
+          end_date?: string | null
+          event_id: string
+          id?: string
+          leads_contacted?: number
+          leads_generated?: number
+          notes?: string | null
+          organization_id: string
+          paid_registrations?: number
+          payment_links_sent?: number
+          platform: string
+          spend?: number
+          start_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          campaign_name?: string
+          created_at?: string
+          created_by?: string | null
+          end_date?: string | null
+          event_id?: string
+          id?: string
+          leads_contacted?: number
+          leads_generated?: number
+          notes?: string | null
+          organization_id?: string
+          paid_registrations?: number
+          payment_links_sent?: number
+          platform?: string
+          spend?: number
+          start_date?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_ad_campaigns_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "event_readiness_summary"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "event_ad_campaigns_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_ad_campaigns_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_attendees: {
         Row: {
           checked_in: boolean
@@ -213,6 +372,104 @@ export type Database = {
           },
         ]
       }
+      event_budget_items: {
+        Row: {
+          actual_amount: number
+          approval_status: string | null
+          category: Database["public"]["Enums"]["budget_category"]
+          created_at: string
+          created_by: string | null
+          description: string | null
+          event_id: string
+          gst_rate: number | null
+          gst_type: string | null
+          hsn_code: string | null
+          id: string
+          is_reusable: boolean
+          label: string
+          notes: string | null
+          organization_id: string
+          planned_amount: number
+          qty: number
+          receipt_url: string | null
+          updated_at: string
+          vendor_name: string | null
+        }
+        Insert: {
+          actual_amount?: number
+          approval_status?: string | null
+          category: Database["public"]["Enums"]["budget_category"]
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          event_id: string
+          gst_rate?: number | null
+          gst_type?: string | null
+          hsn_code?: string | null
+          id?: string
+          is_reusable?: boolean
+          label: string
+          notes?: string | null
+          organization_id: string
+          planned_amount?: number
+          qty?: number
+          receipt_url?: string | null
+          updated_at?: string
+          vendor_name?: string | null
+        }
+        Update: {
+          actual_amount?: number
+          approval_status?: string | null
+          category?: Database["public"]["Enums"]["budget_category"]
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          event_id?: string
+          gst_rate?: number | null
+          gst_type?: string | null
+          hsn_code?: string | null
+          id?: string
+          is_reusable?: boolean
+          label?: string
+          notes?: string | null
+          organization_id?: string
+          planned_amount?: number
+          qty?: number
+          receipt_url?: string | null
+          updated_at?: string
+          vendor_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_budget_items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_budget_items_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "event_readiness_summary"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "event_budget_items_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_budget_items_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_checklist_items: {
         Row: {
           additional_approved_qty: number
@@ -243,6 +500,7 @@ export type Database = {
           responsible_staff_id: string | null
           returned_qty: number
           status: Database["public"]["Enums"]["item_status"]
+          status_note: string | null
           unit: string
           updated_at: string
           venue_status: string
@@ -277,6 +535,7 @@ export type Database = {
           responsible_staff_id?: string | null
           returned_qty?: number
           status?: Database["public"]["Enums"]["item_status"]
+          status_note?: string | null
           unit?: string
           updated_at?: string
           venue_status?: string
@@ -311,6 +570,7 @@ export type Database = {
           responsible_staff_id?: string | null
           returned_qty?: number
           status?: Database["public"]["Enums"]["item_status"]
+          status_note?: string | null
           unit?: string
           updated_at?: string
           venue_status?: string
@@ -475,6 +735,7 @@ export type Database = {
       event_payments: {
         Row: {
           amount: number
+          category: string | null
           collected_by: string | null
           created_at: string
           description: string | null
@@ -488,6 +749,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          category?: string | null
           collected_by?: string | null
           created_at?: string
           description?: string | null
@@ -501,6 +763,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          category?: string | null
           collected_by?: string | null
           created_at?: string
           description?: string | null
@@ -536,6 +799,140 @@ export type Database = {
           },
           {
             foreignKeyName: "event_payments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_revenue_adjustments: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          event_id: string
+          id: string
+          label: string
+          notes: string | null
+          organization_id: string
+          type: Database["public"]["Enums"]["revenue_adjustment_type"]
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          event_id: string
+          id?: string
+          label: string
+          notes?: string | null
+          organization_id: string
+          type: Database["public"]["Enums"]["revenue_adjustment_type"]
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          event_id?: string
+          id?: string
+          label?: string
+          notes?: string | null
+          organization_id?: string
+          type?: Database["public"]["Enums"]["revenue_adjustment_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_revenue_adjustments_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "event_readiness_summary"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "event_revenue_adjustments_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_revenue_adjustments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_revenue_tiers: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          event_id: string
+          gst_rate: number | null
+          gst_type: string | null
+          hsn_code: string | null
+          id: string
+          notes: string | null
+          organization_id: string
+          price: number
+          seats_available: number
+          seats_sold: number
+          tier_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          event_id: string
+          gst_rate?: number | null
+          gst_type?: string | null
+          hsn_code?: string | null
+          id?: string
+          notes?: string | null
+          organization_id: string
+          price?: number
+          seats_available?: number
+          seats_sold?: number
+          tier_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          event_id?: string
+          gst_rate?: number | null
+          gst_type?: string | null
+          hsn_code?: string | null
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          price?: number
+          seats_available?: number
+          seats_sold?: number
+          tier_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_revenue_tiers_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "event_readiness_summary"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "event_revenue_tiers_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_revenue_tiers_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -630,7 +1027,7 @@ export type Database = {
           event_id: string
           id: string
           notes: string | null
-          operation_plan_id: string
+          operation_plan_id: string | null
           organization_id: string
           priority: Database["public"]["Enums"]["priority_level"]
           proof_urls: string[]
@@ -654,7 +1051,7 @@ export type Database = {
           event_id: string
           id?: string
           notes?: string | null
-          operation_plan_id: string
+          operation_plan_id?: string | null
           organization_id: string
           priority?: Database["public"]["Enums"]["priority_level"]
           proof_urls?: string[]
@@ -678,7 +1075,7 @@ export type Database = {
           event_id?: string
           id?: string
           notes?: string | null
-          operation_plan_id?: string
+          operation_plan_id?: string | null
           organization_id?: string
           priority?: Database["public"]["Enums"]["priority_level"]
           proof_urls?: string[]
@@ -747,8 +1144,140 @@ export type Database = {
           },
         ]
       }
+      event_tours: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          notes: string | null
+          organization_id: string
+          program: string
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          organization_id: string
+          program: string
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          organization_id?: string
+          program?: string
+          updated_at?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_tours_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_upsells: {
+        Row: {
+          attendee_email: string | null
+          attendee_name: string
+          attendee_phone: string | null
+          created_at: string
+          created_by: string | null
+          days_between: number | null
+          id: string
+          notes: string | null
+          organization_id: string
+          source_amount: number
+          source_event_id: string
+          target_amount: number
+          target_event_id: string
+          updated_at: string
+        }
+        Insert: {
+          attendee_email?: string | null
+          attendee_name: string
+          attendee_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          days_between?: number | null
+          id?: string
+          notes?: string | null
+          organization_id: string
+          source_amount?: number
+          source_event_id: string
+          target_amount?: number
+          target_event_id: string
+          updated_at?: string
+        }
+        Update: {
+          attendee_email?: string | null
+          attendee_name?: string
+          attendee_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          days_between?: number | null
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          source_amount?: number
+          source_event_id?: string
+          target_amount?: number
+          target_event_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_upsells_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_upsells_source_event_id_fkey"
+            columns: ["source_event_id"]
+            isOneToOne: false
+            referencedRelation: "event_readiness_summary"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "event_upsells_source_event_id_fkey"
+            columns: ["source_event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_upsells_target_event_id_fkey"
+            columns: ["target_event_id"]
+            isOneToOne: false
+            referencedRelation: "event_readiness_summary"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "event_upsells_target_event_id_fkey"
+            columns: ["target_event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
+          budget: number | null
           category: string
           created_at: string
           created_by: string
@@ -764,11 +1293,13 @@ export type Database = {
           start_datetime: string
           status: string
           title: string
+          tour_id: string | null
           updated_at: string
           venue_address: string | null
           venue_name: string
         }
         Insert: {
+          budget?: number | null
           category?: string
           created_at?: string
           created_by: string
@@ -784,11 +1315,13 @@ export type Database = {
           start_datetime: string
           status?: string
           title: string
+          tour_id?: string | null
           updated_at?: string
           venue_address?: string | null
           venue_name: string
         }
         Update: {
+          budget?: number | null
           category?: string
           created_at?: string
           created_by?: string
@@ -804,6 +1337,7 @@ export type Database = {
           start_datetime?: string
           status?: string
           title?: string
+          tour_id?: string | null
           updated_at?: string
           venue_address?: string | null
           venue_name?: string
@@ -835,6 +1369,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "event_tours"
             referencedColumns: ["id"]
           },
         ]
@@ -1409,6 +1950,250 @@ export type Database = {
           },
         ]
       }
+      staff_invites: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          expires_at: string
+          full_name: string
+          id: string
+          job_title: string | null
+          organization_id: string
+          phone: string | null
+          role: string
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          full_name: string
+          id?: string
+          job_title?: string | null
+          organization_id: string
+          phone?: string | null
+          role: string
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          full_name?: string
+          id?: string
+          job_title?: string | null
+          organization_id?: string
+          phone?: string | null
+          role?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_invites_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_invites_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_template_items: {
+        Row: {
+          category: string
+          created_at: string
+          days_before_event: number | null
+          default_role: string | null
+          description: string | null
+          id: string
+          priority: string
+          sort_order: number
+          template_id: string
+          title: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          days_before_event?: number | null
+          default_role?: string | null
+          description?: string | null
+          id?: string
+          priority?: string
+          sort_order?: number
+          template_id: string
+          title: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          days_before_event?: number | null
+          default_role?: string | null
+          description?: string | null
+          id?: string
+          priority?: string
+          sort_order?: number
+          template_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_template_items_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "task_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          organization_id: string
+          program: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          organization_id: string
+          program?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          organization_id?: string
+          program?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_templates_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tour_shared_costs: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          id: string
+          label: string
+          notes: string | null
+          organization_id: string
+          split_method: string
+          tour_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label: string
+          notes?: string | null
+          organization_id: string
+          split_method?: string
+          tour_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string
+          notes?: string | null
+          organization_id?: string
+          split_method?: string
+          tour_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tour_shared_costs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tour_shared_costs_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "event_tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendors: {
+        Row: {
+          category: string | null
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          organization_id: string
+          phone: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          organization_id: string
+          phone: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          organization_id?: string
+          phone?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendors_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       event_readiness_summary: {
@@ -1429,6 +2214,36 @@ export type Database = {
       }
     }
     Functions: {
+      _activity_log_insert:
+        | {
+            Args: {
+              p_action: string
+              p_entity_id: string
+              p_entity_name: string
+              p_entity_type: string
+              p_event_id: string
+              p_new_value?: Json
+              p_old_value?: Json
+              p_org_id: string
+              p_plan_id: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_action: string
+              p_actor_id: string
+              p_entity_id: string
+              p_entity_name: string
+              p_entity_type: string
+              p_event_id: string
+              p_new_value?: Json
+              p_old_value?: Json
+              p_org_id: string
+              p_plan_id: string
+            }
+            Returns: undefined
+          }
       get_auth_org_id: { Args: never; Returns: string }
       get_auth_role: { Args: never; Returns: string }
       log_event_activity: {
@@ -1450,6 +2265,13 @@ export type Database = {
       }
     }
     Enums: {
+      budget_category:
+        | "ad_spend"
+        | "venue_facilities"
+        | "travel_stay"
+        | "gifts_merchandise"
+        | "inventory"
+        | "other"
       event_phase:
         | "planning"
         | "preparation"
@@ -1471,8 +2293,18 @@ export type Database = {
         | "damaged"
         | "cancelled"
         | "not_applicable"
+        | "pending"
+        | "at_venue"
+        | "done"
+        | "issue"
       item_type: "consumable" | "reusable"
       priority_level: "critical" | "high" | "medium" | "low"
+      revenue_adjustment_type:
+        | "refund"
+        | "advance_booking"
+        | "gateway_fee"
+        | "discount"
+        | "other"
       shortage_status:
         | "pending"
         | "under_review"
@@ -1626,6 +2458,14 @@ export const Constants = {
   },
   public: {
     Enums: {
+      budget_category: [
+        "ad_spend",
+        "venue_facilities",
+        "travel_stay",
+        "gifts_merchandise",
+        "inventory",
+        "other",
+      ],
       event_phase: [
         "planning",
         "preparation",
@@ -1648,9 +2488,20 @@ export const Constants = {
         "damaged",
         "cancelled",
         "not_applicable",
+        "pending",
+        "at_venue",
+        "done",
+        "issue",
       ],
       item_type: ["consumable", "reusable"],
       priority_level: ["critical", "high", "medium", "low"],
+      revenue_adjustment_type: [
+        "refund",
+        "advance_booking",
+        "gateway_fee",
+        "discount",
+        "other",
+      ],
       shortage_status: [
         "pending",
         "under_review",

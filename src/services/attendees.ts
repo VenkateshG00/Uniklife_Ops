@@ -18,8 +18,7 @@ export interface Attendee {
 export const attendeesService = {
   async listByEvent(eventId: string) {
     const { data, error } = await supabase
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .from('event_attendees' as any)
+      .from('event_attendees')
       .select('*')
       .eq('event_id', eventId)
       .order('full_name', { ascending: true })
@@ -29,9 +28,8 @@ export const attendeesService = {
 
   async create(payload: Partial<Attendee>) {
     const { data, error } = await supabase
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .from('event_attendees' as any)
-      .insert(payload as any)
+      .from('event_attendees')
+      .insert(payload as Record<string, unknown>)
       .select()
       .single()
     if (error) throw error
@@ -40,8 +38,7 @@ export const attendeesService = {
 
   async checkIn(id: string, checkedInBy: string) {
     const { data, error } = await supabase
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .from('event_attendees' as any)
+      .from('event_attendees')
       .update({
         checked_in: true,
         checked_in_at: new Date().toISOString(),
@@ -57,8 +54,7 @@ export const attendeesService = {
 
   async findByTicket(ticketCode: string) {
     const { data, error } = await supabase
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .from('event_attendees' as any)
+      .from('event_attendees')
       .select('*')
       .eq('ticket_code', ticketCode)
       .single()

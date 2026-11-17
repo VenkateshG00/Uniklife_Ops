@@ -67,6 +67,57 @@ export function useRealtimeSync() {
         }
       )
 
+      // Budget items — amounts, GST, approval status
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'event_budget_items' },
+        () => {
+          qc.invalidateQueries({ queryKey: ['budget-items'] })
+          qc.invalidateQueries({ queryKey: ['budget-summary'] })
+        }
+      )
+
+      // Revenue tiers — price, seats changes
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'event_revenue_tiers' },
+        () => {
+          qc.invalidateQueries({ queryKey: ['revenue-tiers'] })
+          qc.invalidateQueries({ queryKey: ['revenue-adjustments'] })
+        }
+      )
+
+      // Ad campaigns — spend, lead counts
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'event_ad_campaigns' },
+        () => {
+          qc.invalidateQueries({ queryKey: ['ad-campaigns'] })
+        }
+      )
+
+      // Budget approvals — approve/reject/cancel
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'budget_approvals' },
+        () => {
+          qc.invalidateQueries({ queryKey: ['approvals'] })
+          qc.invalidateQueries({ queryKey: ['pending-approvals'] })
+          qc.invalidateQueries({ queryKey: ['budget-items'] })
+        }
+      )
+
+      // Upsells — new cross-event upsell records
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'event_upsells' },
+        () => {
+          qc.invalidateQueries({ queryKey: ['upsells-downstream'] })
+          qc.invalidateQueries({ queryKey: ['upsells-upstream'] })
+          qc.invalidateQueries({ queryKey: ['upsell-stats'] })
+        }
+      )
+
       .subscribe()
 
     channelRef.current = channel

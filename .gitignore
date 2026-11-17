@@ -17,6 +17,20 @@ dist-ssr
 .env.*
 !.env.example
 
+# Private docs — Blueprint, specs, roadmaps (local only, do not share)
+docs/PRD.md
+docs/DESIGN_SYSTEM.md
+docs/ARCHITECTURE.md
+docs/DATABASE.md
+docs/SECURITY.md
+docs/CODE_STYLE.md
+docs/TESTING.md
+docs/AGENTS.md
+docs/event-budget-spec.md
+docs/v4-roadmap.md
+docs/v2-roadmap.md
+docs/v3-roadmap.md
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
