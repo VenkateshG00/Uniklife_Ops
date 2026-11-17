@@ -212,15 +212,14 @@ export function TourPnLPage() {
   const navigate = useNavigate()
   const { isAdmin } = useRole()
 
-  if (!tourId) return <div className="p-8 text-center text-slate-500">Tour not found</div>
+  const safeTourId = tourId ?? ''
+  const { data: tour, isLoading: tourLoading, isError: tourError } = useTour(safeTourId)
+  const { data: events = [], isLoading: eventsLoading } = useTourEvents(safeTourId)
+  const { data: sharedCosts = [], isLoading: costsLoading } = useTourSharedCosts(safeTourId)
 
-  const { data: tour, isLoading: tourLoading, isError: tourError } = useTour(tourId)
-  const { data: events = [], isLoading: eventsLoading } = useTourEvents(tourId)
-  const { data: sharedCosts = [], isLoading: costsLoading } = useTourSharedCosts(tourId)
-
-  const createCost = useCreateSharedCost(tourId)
-  const updateCost = useUpdateSharedCost(tourId)
-  const deleteCost = useDeleteSharedCost(tourId)
+  const createCost = useCreateSharedCost(safeTourId)
+  const updateCost = useUpdateSharedCost(safeTourId)
+  const deleteCost = useDeleteSharedCost(safeTourId)
 
   const [pnlMap, setPnlMap] = useState<Record<string, PnLData>>({})
   const [showCostForm, setShowCostForm] = useState(false)
@@ -232,6 +231,8 @@ export function TourPnLPage() {
       return { ...prev, [eventId]: data }
     })
   }, [])
+
+  if (!tourId) return <div className="p-8 text-center text-slate-500">Tour not found</div>
 
   // Compute tour totals
   const tourTotalRevenue = Object.values(pnlMap).reduce((s, p) => s + p.netRevenue, 0)

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatCurrency, formatDateTime, cn, calcReadinessPct, pluralize, readinessPctColor, formatDate, isOverdue } from '../utils'
+import { formatCurrency, formatDateTime, cn, calcReadinessPct, pluralize, readinessPctColor } from '../utils'
 
 describe('formatCurrency', () => {
   it('formats positive amounts in INR with no decimals', () => {
