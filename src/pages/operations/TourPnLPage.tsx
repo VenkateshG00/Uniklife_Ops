@@ -126,7 +126,7 @@ function SharedCostForm({
   isLoading,
 }: {
   initial?: TourSharedCost
-  onSubmit: (data: { label: string; amount: number; split_method: TourSplitMethod; notes?: string }) => void
+  onSubmit: (data: { label: string; amount: number; split_method: TourSplitMethod; notes?: string | null }) => void
   onCancel: () => void
   isLoading: boolean
 }) {
@@ -405,7 +405,7 @@ export function TourPnLPage() {
                 <BarChart data={chartData} barGap={4}>
                   <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                   <YAxis tickFormatter={v => `₹${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 12 }} />
-                  <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                  <Tooltip formatter={(v) => formatCurrency(Number(v))} />
                   <Legend />
                   <Bar dataKey="Revenue" fill="#10b981" radius={[4, 4, 0, 0]} />
                   <Bar dataKey="Expenses" fill="#ef4444" radius={[4, 4, 0, 0]} />

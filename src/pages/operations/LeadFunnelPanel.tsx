@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   Plus, Trash2, Edit3, X, Check, Loader2,
-  Megaphone, Target, Users, CreditCard, TrendingUp, BarChart3, Download,
+  Megaphone, Target, BarChart3, Download,
 } from 'lucide-react'
 import { cn, formatCurrency } from '../../lib/utils'
 import { exportToExcel } from '../../lib/exportExcel'
@@ -139,7 +139,7 @@ function PlatformComparison({ campaigns }: { campaigns: EventAdCampaign[] }) {
           <XAxis dataKey="platform" tick={{ fontSize: 11, fill: '#64748b' }} />
           <YAxis yAxisId="left" tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={(v: number) => `₹${(v / 1000).toFixed(0)}k`} />
           <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: '#94a3b8' }} />
-          <Tooltip formatter={(value: number, name: string) => [name === 'Spend' ? formatCurrency(value) : value, name]} />
+          <Tooltip formatter={(value, name) => [name === 'Spend' ? formatCurrency(Number(value)) : value, String(name)]} />
           <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px' }} />
           <Bar dataKey="Spend" yAxisId="left" fill="#f59e0b" radius={[4, 4, 0, 0]} maxBarSize={36} />
           <Bar dataKey="Leads" yAxisId="right" fill="#6366f1" radius={[4, 4, 0, 0]} maxBarSize={36} />

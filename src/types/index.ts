@@ -82,19 +82,19 @@ export interface Event {
   organization_id: UUID
   title: string
   category: string
-  description?: string
+  description?: string | null
   venue_name: string
-  venue_address: string
-  location_link?: string
+  venue_address?: string | null
+  location_link?: string | null
   start_datetime: string
   end_datetime: string
   expected_attendees: number
-  event_manager_id?: UUID
-  office_coordinator_id?: UUID
+  event_manager_id?: UUID | null
+  office_coordinator_id?: UUID | null
   status: 'draft' | 'published' | 'active' | 'completed' | 'cancelled'
   phase: EventPhase
-  budget?: number
-  tour_id?: UUID
+  budget?: number | null
+  tour_id?: UUID | null
   created_by: UUID
   created_at: string
   updated_at: string
@@ -396,18 +396,18 @@ export interface EventBudgetItem {
   organization_id: UUID
   category: BudgetCategory
   label: string
-  description?: string
+  description?: string | null
   planned_amount: number
   actual_amount: number
   is_reusable: boolean
   qty: number
-  vendor_name?: string
-  receipt_url?: string
-  notes?: string
+  vendor_name?: string | null
+  receipt_url?: string | null
+  notes?: string | null
   gst_rate: number
   gst_type: GstType
-  hsn_code?: string
-  created_by?: UUID
+  hsn_code?: string | null
+  created_by?: UUID | null
   created_at: string
   approval_status?: ApprovalStatus
   updated_at: string
@@ -419,16 +419,16 @@ export interface BudgetApproval {
   id: UUID
   organization_id: UUID
   event_id: UUID
-  budget_item_id?: UUID
+  budget_item_id?: UUID | null
   requested_by: UUID
-  approved_by?: UUID
+  approved_by?: UUID | null
   status: ApprovalStatus
   amount: number
-  category?: string
-  description?: string
-  rejection_reason?: string
+  category?: string | null
+  description?: string | null
+  rejection_reason?: string | null
   requested_at: string
-  resolved_at?: string
+  resolved_at?: string | null
   updated_at: string
 }
 
@@ -448,11 +448,11 @@ export interface EventRevenueTier {
   price: number
   seats_available: number
   seats_sold: number
-  notes?: string
-  gst_rate?: number
-  gst_type?: GstType
-  hsn_code?: string
-  created_by?: UUID
+  notes?: string | null
+  gst_rate?: number | null
+  gst_type?: GstType | null
+  hsn_code?: string | null
+  created_by?: UUID | null
   created_at: string
   updated_at: string
 }
@@ -484,10 +484,10 @@ export interface EventAdCampaign {
   leads_contacted: number
   payment_links_sent: number
   paid_registrations: number
-  start_date?: string
-  end_date?: string
-  notes?: string
-  created_by?: UUID
+  start_date?: string | null
+  end_date?: string | null
+  notes?: string | null
+  created_by?: UUID | null
   created_at: string
   updated_at: string
 }
@@ -516,8 +516,8 @@ export interface TourSharedCost {
   label: string
   amount: number
   split_method: TourSplitMethod
-  notes?: string
-  created_by?: UUID
+  notes?: string | null
+  created_by?: UUID | null
   created_at: string
   updated_at: string
 }
@@ -528,13 +528,13 @@ export interface EventUpsell {
   target_event_id: UUID
   organization_id: UUID
   attendee_name: string
-  attendee_email?: string
-  attendee_phone?: string
+  attendee_email?: string | null
+  attendee_phone?: string | null
   source_amount: number
   target_amount: number
-  days_between?: number
-  notes?: string
-  created_by?: UUID
+  days_between?: number | null
+  notes?: string | null
+  created_by?: UUID | null
   created_at: string
   updated_at: string
 }

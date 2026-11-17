@@ -125,7 +125,7 @@ function ExpenseBreakdown({ expensesByCategory }: {
               outerRadius={90}
               innerRadius={50}
               paddingAngle={2}
-              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+              label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
               labelLine={false}
               fontSize={11}
             >
@@ -133,7 +133,7 @@ function ExpenseBreakdown({ expensesByCategory }: {
                 <Cell key={entry.key} fill={CATEGORY_COLORS[entry.key] ?? '#64748b'} />
               ))}
             </Pie>
-            <Tooltip formatter={(value: number) => formatCurrency(value)} />
+            <Tooltip formatter={(value) => formatCurrency(Number(value))} />
             <Legend
               verticalAlign="bottom"
               iconType="circle"
@@ -196,7 +196,7 @@ function RevenueByTier({ revenueByTier }: {
           <BarChart data={revenueByTier} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
             <XAxis dataKey="tierName" tick={{ fontSize: 11, fill: '#64748b' }} />
             <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={(v: number) => `₹${(v / 1000).toFixed(0)}k`} />
-            <Tooltip formatter={(value: number) => formatCurrency(value)} labelStyle={{ fontWeight: 600 }} />
+            <Tooltip formatter={(value) => formatCurrency(Number(value))} labelStyle={{ fontWeight: 600 }} />
             <Bar dataKey="revenue" fill={BRAND_COLOR} radius={[4, 4, 0, 0]} maxBarSize={48} />
           </BarChart>
         </ResponsiveContainer>

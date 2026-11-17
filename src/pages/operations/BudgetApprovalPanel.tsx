@@ -62,7 +62,7 @@ export function BudgetApprovalPanel({ eventId, isAdmin }: Props) {
   const [showRequestForm, setShowRequestForm] = useState(false)
   const [form, setForm] = useState({ budget_item_id: '', amount: '', category: '', description: '' })
 
-  const resolved = all.filter((a: BudgetApproval) => a.status !== 'pending')
+  const resolved = all.filter((a: any) => a.status !== 'pending')
 
   function handleReject(id: string) {
     if (!rejectReason.trim()) return
@@ -98,7 +98,7 @@ export function BudgetApprovalPanel({ eventId, isAdmin }: Props) {
           <p className="text-xs font-semibold text-amber-600 uppercase tracking-wide">
             {pending.length} Pending Approval{pending.length > 1 ? 's' : ''}
           </p>
-          {pending.map((a: BudgetApproval) => (
+          {pending.map((a: any) => (
             <div key={a.id} className="border border-amber-200 bg-amber-50/50 rounded-lg p-4 space-y-2">
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -249,7 +249,7 @@ export function BudgetApprovalPanel({ eventId, isAdmin }: Props) {
           </button>
           {showHistory && (
             <div className="mt-3 space-y-2">
-              {resolved.map((a: BudgetApproval) => (
+              {resolved.map((a: any) => (
                 <div key={a.id} className="border border-slate-100 rounded-lg p-3 flex items-center justify-between gap-3">
                   <div>
                     <p className="text-xs font-medium text-slate-700">{a.description || a.category || 'Budget Item'}</p>

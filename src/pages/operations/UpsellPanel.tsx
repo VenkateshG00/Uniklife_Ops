@@ -8,7 +8,6 @@ import {
 } from '../../hooks/useUpsell'
 import { useEvents } from '../../hooks/useEvents'
 import { formatCurrency, cn } from '../../lib/utils'
-import type { EventUpsell } from '../../types'
 import {
   Plus, Pencil, Trash2, Loader2, Users,
   TrendingUp, Calendar, ArrowRight, AlertTriangle, X, Check, Info,

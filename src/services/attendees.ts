@@ -29,7 +29,7 @@ export const attendeesService = {
   async create(payload: Partial<Attendee>) {
     const { data, error } = await supabase
       .from('event_attendees')
-      .insert(payload as Record<string, unknown>)
+      .insert(payload as any)
       .select()
       .single()
     if (error) throw error

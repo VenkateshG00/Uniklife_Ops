@@ -24,7 +24,7 @@ export const upsellService = {
   async createUpsell(payload: Record<string, any>) {
     const { data, error } = await supabase
       .from('event_upsells')
-      .insert(payload)
+      .insert(payload as any)
       .select()
       .single()
     if (error) throw error
@@ -34,7 +34,7 @@ export const upsellService = {
   async updateUpsell(id: string, payload: Record<string, any>) {
     const { data, error } = await supabase
       .from('event_upsells')
-      .update(payload)
+      .update(payload as any)
       .eq('id', id)
       .select()
       .single()

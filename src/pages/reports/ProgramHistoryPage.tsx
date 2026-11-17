@@ -4,7 +4,6 @@ import { Header } from '../../components/layout/Header'
 import {
   useProgramEditions,
   useCrossProgramComparison,
-  type EditionSummary,
 } from '../../hooks/useProgramHistory'
 import { formatCurrency, cn } from '../../lib/utils'
 import { exportToExcel } from '../../lib/exportExcel'
@@ -15,7 +14,6 @@ import {
   TrendingUp,
   TrendingDown,
   Loader2,
-  Users,
   IndianRupee,
   Target,
   Percent,
@@ -144,8 +142,8 @@ function EditionHistoryTab({ program }: { program: string }) {
             <YAxis yAxisId="left" tick={{ fontSize: 12 }} tickFormatter={v => `₹${(v / 1000).toFixed(0)}k`} />
             <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }} tickFormatter={v => `${v}%`} />
             <Tooltip
-              formatter={(value: number, name: string) =>
-                name === 'Margin %' ? `${value.toFixed(1)}%` : formatCurrency(value)
+              formatter={(value, name) =>
+                name === 'Margin %' ? `${Number(value).toFixed(1)}%` : formatCurrency(Number(value))
               }
             />
             <Legend />
@@ -275,31 +273,32 @@ function CrossProgramTab({ year }: { year: number }) {
 
   const chartData = programs.map(p => ({
     name: p,
-    Revenue: comparison[p].totals.netRevenue,
-    Expenses: comparison[p].totals.totalExpenses,
-    Profit: comparison[p].totals.grossProfit,
+    Revenue: comparison[p]?.totals.netRevenue ?? 0,
+    Expenses: comparison[p]?.totals.totalExpenses ?? 0,
+    Profit: comparison[p]?.totals.grossProfit ?? 0,
   }))
 
   const rankings = [
-    { label: 'Best Revenue', metric: programs.reduce((best, p) => comparison[p].totals.grossRevenue > (comparison[best]?.totals.grossRevenue ?? 0) ? p : best, programs[0]), value: (p: string) => formatCurrency(comparison[p]?.totals.grossRevenue ?? 0), icon: IndianRupee },
-    { label: 'Best Margin', metric: programs.reduce((best, p) => comparison[p].totals.margin > (comparison[best]?.totals.margin ?? 0) ? p : best, programs[0]), value: (p: string) => pctStr(comparison[p]?.totals.margin ?? 0), icon: Percent },
-    { label: 'Best CPL', metric: programs.reduce((best, p) => { const v = comparison[p].totals.cpl; const bv = comparison[best]?.totals.cpl ?? Infinity; return v > 0 && v < bv ? p : best }, programs[0]), value: (p: string) => formatCurrency(comparison[p]?.totals.cpl ?? 0), icon: Target },
-    { label: 'Best Conversion', metric: programs.reduce((best, p) => comparison[p].totals.conversionRate > (comparison[best]?.totals.conversionRate ?? 0) ? p : best, programs[0]), value: (p: string) => pctStr(comparison[p]?.totals.conversionRate ?? 0), icon: TrendingUp },
+    { label: 'Best Revenue', metric: programs.reduce((best, p) => (comparison[p]?.totals.grossRevenue ?? 0) > (comparison[best]?.totals.grossRevenue ?? 0) ? p : best, programs[0]), value: (p: string) => formatCurrency(comparison[p]?.totals.grossRevenue ?? 0), icon: IndianRupee },
+    { label: 'Best Margin', metric: programs.reduce((best, p) => (comparison[p]?.totals.margin ?? 0) > (comparison[best]?.totals.margin ?? 0) ? p : best, programs[0]), value: (p: string) => pctStr(comparison[p]?.totals.margin ?? 0), icon: Percent },
+    { label: 'Best CPL', metric: programs.reduce((best, p) => { const v = comparison[p]?.totals.cpl ?? Infinity; const bv = comparison[best]?.totals.cpl ?? Infinity; return v > 0 && v < bv ? p : best }, programs[0]), value: (p: string) => formatCurrency(comparison[p]?.totals.cpl ?? 0), icon: Target },
+    { label: 'Best Conversion', metric: programs.reduce((best, p) => (comparison[p]?.totals.conversionRate ?? 0) > (comparison[best]?.totals.conversionRate ?? 0) ? p : best, programs[0]), value: (p: string) => pctStr(comparison[p]?.totals.conversionRate ?? 0), icon: TrendingUp },
   ]
 
   async function exportComparison() {
+    if (!comparison) return
     const exportRows = programs.map(p => {
-      const t = comparison[p].totals
+      const t = comparison[p]?.totals
       return {
         Program: p,
-        Events: comparison[p].events.length,
-        Registrations: t.registrations,
-        'Revenue (₹)': t.netRevenue,
-        'Expenses (₹)': t.totalExpenses,
-        'Profit (₹)': t.grossProfit,
-        'Margin %': Number(t.margin.toFixed(1)),
-        'CPL (₹)': Number(t.cpl.toFixed(2)),
-        'Conversion %': Number(t.conversionRate.toFixed(1)),
+        Events: comparison[p]?.events.length ?? 0,
+        Registrations: t?.registrations ?? 0,
+        'Revenue (₹)': t?.netRevenue ?? 0,
+        'Expenses (₹)': t?.totalExpenses ?? 0,
+        'Profit (₹)': t?.grossProfit ?? 0,
+        'Margin %': Number((t?.margin ?? 0).toFixed(1)),
+        'CPL (₹)': Number((t?.cpl ?? 0).toFixed(2)),
+        'Conversion %': Number((t?.conversionRate ?? 0).toFixed(1)),
       }
     })
     await exportToExcel(exportRows, 'program-comparison-export', 'Program Comparison')
@@ -354,7 +353,7 @@ function CrossProgramTab({ year }: { year: number }) {
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
             <XAxis dataKey="name" tick={{ fontSize: 12 }} />
             <YAxis tick={{ fontSize: 12 }} tickFormatter={v => `₹${(v / 1000).toFixed(0)}k`} />
-            <Tooltip formatter={(value: number) => formatCurrency(value)} />
+            <Tooltip formatter={(value) => formatCurrency(Number(value))} />
             <Legend />
             <Bar dataKey="Revenue" fill="#10b981" radius={[4, 4, 0, 0]} />
             <Bar dataKey="Expenses" fill="#ef4444" radius={[4, 4, 0, 0]} />

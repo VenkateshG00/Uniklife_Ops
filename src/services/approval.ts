@@ -25,7 +25,7 @@ export const approvalService = {
   async createApproval(payload: Record<string, unknown>) {
     const { data, error } = await supabase
       .from('budget_approvals')
-      .insert(payload)
+      .insert(payload as any)
       .select()
       .single()
     if (error) throw error

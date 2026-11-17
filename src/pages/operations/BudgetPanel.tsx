@@ -152,7 +152,6 @@ export function BudgetPanel({ eventId, isAdmin }: Props) {
   const totalActual = items.reduce((s, i) => s + Number(i.actual_amount), 0)
   const totalGst = items.reduce((s, i) => s + calcGst(i).total, 0)
 
-  const pendingItemIds = new Set(pendingApprovals.map((a: any) => a.budget_item_id).filter(Boolean))
   const filteredByCategory = filterCat === 'all' ? items : items.filter(i => i.category === filterCat)
   const filtered = showPendingOnly ? filteredByCategory.filter(i => i.approval_status === 'pending') : filteredByCategory
 
@@ -167,7 +166,7 @@ export function BudgetPanel({ eventId, isAdmin }: Props) {
       receipt_url: form.receipt_url || null,
       notes: form.notes || null,
       hsn_code: form.hsn_code || null,
-      ...(needsApproval && !editingId ? { approval_status: 'pending' } : {}),
+      ...(needsApproval && !editingId ? { approval_status: 'pending' as const } : {}),
     }
     if (editingId) {
       updateItem.mutate({ id: editingId, payload }, {
